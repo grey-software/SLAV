@@ -1,30 +1,30 @@
-class Queue {
+module.exports = class Queue {
     //Linked list implementation is faster
-    constructor(){
+    constructor() {
         this.numElements = 0;
         this.items = [];
 
 
     }
 
-    enqueue(item){
+    enqueue (item) {
         this.items.push(item);
 
 
     }
 
-    dequeue(){
-        return(this.items.shift());
+    dequeue () {
+        return (this.items.shift());
 
 
     }
 
-    front(){
+    front () {
         return (this.items)[0];
 
     }
 
-    isEmpty(){
+    isEmpty () {
         return (this.items).length == 0;
 
     }

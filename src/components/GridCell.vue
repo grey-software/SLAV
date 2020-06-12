@@ -1,11 +1,14 @@
 <template>
-  <div @click="$emit('onGridCellClicked', x, y)" class="grid-cell" :class="{start: isStart, dest: isDest}">
+  <div
+    @click="$emit('onGridCellClicked', x, y)"
+    class="grid-cell"
+    :class="{start: isStart, dest: isDest}"
+  >
 
   </div>
 </template>
 
 <script>
-import GridNode from '@/GridNode.js';
 export default {
   props: {
     x: {
@@ -19,22 +22,15 @@ export default {
     gridData: {
       type: Object
     },
-    nodeModel: {
-      type: GridNode
-
-    }
   },
   computed: {
-      isStart() {
-          return this.gridData.startX === this.x && this.gridData.startY === this.y
-      },
+    isStart () {
+      return this.gridData.startX === this.x && this.gridData.startY === this.y
+    },
 
-      isDest(){
-          return this.gridData.destX === this.x && this.gridData.destY === this.y
-
-
-
-      }
+    isDest () {
+      return this.gridData.destX === this.x && this.gridData.destY === this.y
+    }
   },
 }
 </script>
@@ -49,12 +45,10 @@ export default {
 }
 
 .start {
-    background-color: red;
+  background-color: red;
 }
 
-.dest{
-    background-color: yellow;
-
-
+.dest {
+  background-color: yellow;
 }
 </style>

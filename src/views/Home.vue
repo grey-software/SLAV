@@ -4,11 +4,12 @@
     <div class="title">Searching & Learning Algorithm Visualizer</div>
 
     <div class="my-2">
-      <v-btn color="primary">Visualize</v-btn>
+      <v-btn @click="runBfs" :disabled="selectionState != 'ready'" color="primary">Visualize</v-btn>
     </div>
 
     <div class="subtitle">
       <p>Visualiztion Speed: {{vizSpeed}}</p>
+      <p>Current Position: (x: {{currX}}, y: {{currY}})</p>
       <p>State: {{selectionStateLabels[selectionState]}} </p>
     </div>
 
@@ -41,10 +42,7 @@
             :y="i - 1"
             :gridData="gridData"
             @onGridCellClicked="onGridCellClicked"
-            
           />
-          @addNode
-
         </div>
 
       </div>
@@ -55,6 +53,10 @@
 </template>
 
 <script>
+
+import graph from '../search-algorithms/bfs/test-bfs'
+import GridNode from '../search-algorithms/bfs/GridNode'
+import Queue from '../search-algorithms/bfs/Queue'
 // @ is an alias to /src
 
 const GRID_MAX_Y = 5
@@ -67,8 +69,11 @@ bfs(startX, startY, destX, destY).subscribe(context => {
 })
 */
 
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 import GridCell from '@/components/GridCell.vue';
-import GridNode from '@/Node.js';
 
 export default {
   name: 'Home',
@@ -115,45 +120,67 @@ export default {
 
   },
   methods: {
-    onGridCellClicked(x, y){
-      switch(this.selectionState) {
+    runBfs() {
+      var startNode = null;
+      // Grab vertex associated with selected start x and y
+      for (const vertex of graph) {
+        if (vertex.x == this.startX && vertex.y == this.startY) {
+          startNode = vertex
+        }
+      }
+      if (!startNode) return;
+      console.log(this.bfs(graph, startNode))
+    },
+    onGridCellClicked (x, y) {
+      switch (this.selectionState) {
         case 'pick-start': {
           this.startX = x;
-          this.startY = y; 
+          this.startY = y;
           this.selectionState = 'pick-dest'
           break;
         }
         case 'pick-dest': {
           this.destX = x;
-          this.destY = y; 
+          this.destY = y;
           this.selectionState = 'ready'
-          break; 
+          break;
         }
         case 'ready': {
-          break; 
+          break;
         }
       }
 
     },
+    async bfs (graph, start) {
+      const visited = [];
 
-    addNode(x, y){
-
-
+      const queue = new Queue();
+      start.dist = 0;
+      queue.enqueue(start);
+      while (!queue.isEmpty()) {
+        const currentNode = queue.dequeue();
+        this.currX = currentNode.x;
+        this.currY = currentNode.y;
+        await sleep(600)
+        visited.push(currentNode);
+        currentNode.color = "grey";
+        for (const neighbour of currentNode.adj) {
+          //Visit
+          console.log(neighbour)
+          console.log(`Visiting neighbor: (x: ${neighbour.x}, y: ${neighbour.y})`)
+          if (neighbour.color == "white") {
+            console.log(`White neighbor: (x: ${neighbour.x}, y: ${neighbour.y})`)
+            neighbour.color = "grey"
+            neighbour.dist = currentNode.dist + 1
+            queue.enqueue(neighbour)
+          }
+        }
+        // console.log(queue.items)
+        currentNode.color = "black"
+      }
+      return visited;
 
     }
-
-    //V is a list of (x,y) tuples
-    //s is the starting (x.y) position
-    BFS(V,s){
-
-      
-
-
-
-
-    }
-
-
   },
 
 }
