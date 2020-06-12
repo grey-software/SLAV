@@ -5,6 +5,7 @@
 </template>
 
 <script>
+import GridNode from '@/GridNode.js';
 export default {
   props: {
     x: {
@@ -17,6 +18,10 @@ export default {
     },
     gridData: {
       type: Object
+    },
+    nodeModel: {
+      type: GridNode
+
     }
   },
   computed: {

@@ -41,7 +41,9 @@
             :y="i - 1"
             :gridData="gridData"
             @onGridCellClicked="onGridCellClicked"
+            
           />
+          @addNode
 
         </div>
 
@@ -66,6 +68,7 @@ bfs(startX, startY, destX, destY).subscribe(context => {
 */
 
 import GridCell from '@/components/GridCell.vue';
+import GridNode from '@/Node.js';
 
 export default {
   name: 'Home',
@@ -80,6 +83,8 @@ export default {
       startY: null,
       destX: null,
       destY: null,
+      //Node Model
+      node: GridNode,
       currX: 0,
       currY: 0,
       gridMaxY: GRID_MAX_Y,
@@ -103,12 +108,14 @@ export default {
         destX: this.destX,
         destY: this.destY,
         currX: this.currX,
-        currY: this.currY
+        currY: this.currY,
+        nodeList: []
       }
     },
+
   },
   methods: {
-     onGridCellClicked(x, y){
+    onGridCellClicked(x, y){
       switch(this.selectionState) {
         case 'pick-start': {
           this.startX = x;
@@ -126,7 +133,27 @@ export default {
           break; 
         }
       }
+
+    },
+
+    addNode(x, y){
+
+
+
     }
+
+    //V is a list of (x,y) tuples
+    //s is the starting (x.y) position
+    BFS(V,s){
+
+      
+
+
+
+
+    }
+
+
   },
 
 }
