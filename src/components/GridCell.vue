@@ -2,7 +2,7 @@
   <div
     @click="$emit('onGridCellClicked', x, y)"
     class="grid-cell"
-    :class="{start: isStart, dest: isDest}"
+    :class="{start: isStart, dest: isDest, visited: isVisited, finished: isFinished}"
   >
 
   </div>
@@ -22,6 +22,13 @@ export default {
     gridData: {
       type: Object
     },
+
+    color: {
+      type: String,
+      default: "white"
+
+    }
+
   },
   computed: {
     isStart () {
@@ -30,7 +37,21 @@ export default {
 
     isDest () {
       return this.gridData.destX === this.x && this.gridData.destY === this.y
+    },
+
+    isVisited(){
+      return this.color === "green"
+
+    },
+
+
+    isFinished(){
+      return this.color === "blue"
+
+
+
     }
+
   },
 }
 </script>
@@ -50,5 +71,14 @@ export default {
 
 .dest {
   background-color: yellow;
+}
+
+.visited {
+  background-color: green;
+}
+
+
+.finished {
+  background-color: blue;
 }
 </style>
