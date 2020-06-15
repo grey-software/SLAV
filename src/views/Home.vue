@@ -1,6 +1,5 @@
 <template>
   <div class="home">
-
     <div class="title">Searching & Learning Algorithm Visualizer</div>
 
     <div class="my-2">
@@ -10,7 +9,7 @@
     <div class="subtitle">
       <p>Visualiztion Speed: {{vizSpeed}}</p>
       <p>Current Position: (x: {{currX}}, y: {{currY}})</p>
-      <p>State: {{selectionStateLabels[selectionState]}} </p>
+      <p>State: {{selectionStateLabels[selectionState]}}</p>
     </div>
 
     <v-slider
@@ -22,73 +21,50 @@
       tick-size="4"
     ></v-slider>
 
-    <div
-      id="visualizer"
-      class="ml-5 mt-5"
-    >
+    <div v-if="Object.keys(graph).length > 0" id="visualizer" class="ml-5 mt-5">
       <!-- Look for good svg graphics library to render graph -->
       <!-- for(var i = 0; i<30; i++) -->
-      <div
-        v-for="i in gridMaxY"
-        :key="i"
-        class="flex"
-      >
-        <div
-          v-for="j in gridMaxX"
-          :key="j"
-        >
+      <div v-for="i in gridMaxY" :key="i" class="flex">
+        <div v-for="j in gridMaxX" :key="j">
           <grid-cell
             :x="j - 1"
             :y="i - 1"
             :gridData="gridData"
+            :gridNode="getGridNodeForCell(j-1, i-1)"
             @onGridCellClicked="onGridCellClicked"
-            @visitedColorChange="changeColor(this, x, y, 'green')"
-            @finishedColorChange="this.color='blue'"
           />
         </div>
-
       </div>
-
     </div>
-
   </div>
 </template>
 
 <script>
-
 //import graph from '../search-algorithms/bfs/test-bfs'
-import GridNode from '../search-algorithms/bfs/GridNode'
-import Queue from '../search-algorithms/bfs/Queue'
-import Vue from 'vue';
-import VueToast from 'vue-toast-notification';
+import GridNode from "../search-algorithms/bfs/GridNode";
+import Queue from "../search-algorithms/bfs/Queue";
+import Vue from "vue";
+import VueToast from "vue-toast-notification";
 // Import one of available themes
-import 'vue-toast-notification/dist/theme-default.css';
+import "vue-toast-notification/dist/theme-default.css";
 // @ is an alias to /src
 
-const GRID_MAX_Y = 5
-const GRID_MAX_X = 5
-// const bfs = require('bfs')
-// import bfs from 'bfs'
-/*
-bfs(startX, startY, destX, destY).subscribe(context => {
-
-})
-*/
+const GRID_MAX_Y = 3;
+const GRID_MAX_X = 3;
 
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-import GridCell from '@/components/GridCell.vue';
+import GridCell from "@/components/GridCell.vue";
 
 export default {
-  name: 'Home',
+  name: "Home",
   components: {
     GridCell
   },
-  data () {
+  data() {
     return {
-      graph: [],
       vizSpeedIndex: 2,
       vizSpeedOptions: [0.25, 0.5, 1, 1.5, 2, 3],
       startX: null,
@@ -107,166 +83,151 @@ export default {
       selectionStateLabels: {
         "pick-start": "Pick the starting node!",
         "pick-dest": "Pick the destination node!",
-        "ready": "You're ready to visualize!"
-      }
-    }
+        ready: "You're ready to visualize!"
+      },
+      graph: {}
+    };
   },
   computed: {
-    vizSpeed () {
-      return this.vizSpeedOptions[this.vizSpeedIndex]
+    vizSpeed() {
+      return this.vizSpeedOptions[this.vizSpeedIndex];
     },
-    gridData () {
+    gridData() {
       return {
         startX: this.startX,
-        startY: this.startY,  
+        startY: this.startY,
         destX: this.destX,
         destY: this.destY,
         currX: this.currX,
         currY: this.currY,
         nodeList: []
-      }
-    },
-
+      };
+    }
+  },
+  mounted () {
+      this.graph = this.createGraph(this.gridMaxY, this.gridMaxX);
   },
   methods: {
-
-    addNeighbours(j,i,currNode,nodeDict){
+    getGridNodeForCell(x, y) {
+      console.log(this.graph[`(${x},${y})`])
+      return this.graph[`(${x},${y})`]
+    },
+    onVisitedColorChange(x, y) {
+      console.log(x);
+      console.log(y);
+    },
+    addNeighbours(j, i, currNode, nodeDict, rows, cols) {
       var cell = "";
       var adjNode;
-      
-      cell = "(" + (j+1) + "," + i + ")";
-      if(cell in nodeDict){
+
+      cell = "(" + (j + 1) + "," + i + ")";
+      if (cell in nodeDict) {
         currNode.adj.push(nodeDict[cell]);
       } else {
-        adjNode = new GridNode(j+1,i);
-        if(j < 3){
+        adjNode = new GridNode(j + 1, i);
+        if (j < rows - 1) {
           nodeDict[cell] = adjNode;
           currNode.adj.push(adjNode);
         }
       }
 
-      cell = "(" + j + "," + (i+1) + ")";
-      if(cell in nodeDict){
+      cell = "(" + j + "," + (i + 1) + ")";
+      if (cell in nodeDict) {
         currNode.adj.push(nodeDict[cell]);
       } else {
-        adjNode = new GridNode(j,i+1);
-        if(i < 3){
+        adjNode = new GridNode(j, i + 1);
+        if (i < cols - 1) {
           nodeDict[cell] = adjNode;
           currNode.adj.push(adjNode);
         }
       }
 
-      cell = "(" + (j-1) + "," + i + ")";
-      if(cell in nodeDict){
+      cell = "(" + (j - 1) + "," + i + ")";
+      if (cell in nodeDict) {
         currNode.adj.push(nodeDict[cell]);
       } else {
-        adjNode = new GridNode(j-1,i);
-        if(j > 0){
+        adjNode = new GridNode(j - 1, i);
+        if (j > 0) {
           nodeDict[cell] = adjNode;
           currNode.adj.push(adjNode);
         }
       }
 
-      cell = "(" + j + "," + (i-1) + ")";
-      if(cell in nodeDict){
+      cell = "(" + j + "," + (i - 1) + ")";
+      if (cell in nodeDict) {
         currNode.adj.push(nodeDict[cell]);
       } else {
-        adjNode = new GridNode(j+1,i);
-        if(i > 0){
+        adjNode = new GridNode(j + 1, i);
+        if (i > 0) {
           nodeDict[cell] = adjNode;
           currNode.adj.push(adjNode);
         }
-
       }
-
-
-
     },
-    createGraph(){
-      var currNode = new GridNode(0,0);
-      var cell  = "";
+    /**
+     * Creates a model for the graph in the form of:
+     *
+     * {
+     *  (0,0): GridNode,
+     *  (0,1): GridNode,
+     *  (1,0): GridNode
+     * }
+     */
+    createGraph(rows, cols) {
+      var currNode = new GridNode(0, 0);
+      var cell = "";
       var nodeDict = {
         "(0,0)": currNode
-
       };
-      for(var j=0; j<4; j++){
-        for(var i=0; i<4; i++){
-          cell = "(" + j + "," + i + ")";
-          if(cell in nodeDict){
+      for (var j = 0; j < rows; j++) {
+        for (var i = 0; i < cols; i++) {
+          cell = "(" + i + "," + j + ")";
+          if (cell in nodeDict) {
             currNode = nodeDict[cell];
-
-          } else{
-            currNode = new GridNode(j,i);
+          } else {
+            currNode = new GridNode(i, j);
             nodeDict[cell] = currNode;
-
           }
-          this.addNeighbours(j,i,currNode,nodeDict);
-
-
-
+          this.addNeighbours(i, j, currNode, nodeDict, rows, cols);
         }
-
-
-
       }
       return nodeDict;
-
-
-
-
-
     },
 
-
-
-    changeColor(cell, x, y, newColor){
-      if(x == this.neighborCurrX && y == this.neighbourCurrY){
+    changeColor(cell, x, y, newColor) {
+      if (x == this.neighborCurrX && y == this.neighbourCurrY) {
         cell.color = newColor;
         Vue.use(VueToast);
         Vue.$toast.open("Reached");
       }
-
-
-
     },
-
-
-
-
 
     runBfs() {
-      var graph = this.createGraph();
-      var startNode = null;
-      // Grab vertex associated with selected start x and y
-      for (const vertex of graph) {
-        if (vertex.x == this.startX && vertex.y == this.startY) {
-          startNode = vertex
-        }
-      }
-      if (!startNode) return;
-      console.log(this.bfs(graph, startNode))
+      const startNode = this.graph[`(${this.startX},${this.startY})`]
+      console.log(startNode)
+      const visited = this.bfs(this.graph, startNode);
+      console.log(visited)
     },
-    onGridCellClicked (x, y) {
+    onGridCellClicked(x, y) {
       switch (this.selectionState) {
-        case 'pick-start': {
+        case "pick-start": {
           this.startX = x;
           this.startY = y;
-          this.selectionState = 'pick-dest'
+          this.selectionState = "pick-dest";
           break;
         }
-        case 'pick-dest': {
+        case "pick-dest": {
           this.destX = x;
           this.destY = y;
-          this.selectionState = 'ready'
+          this.selectionState = "ready";
           break;
         }
-        case 'ready': {
+        case "ready": {
           break;
         }
       }
-
     },
-    async bfs (graph, start) {
+    async bfs(graph, start) {
       const visited = [];
 
       const queue = new Queue();
@@ -285,24 +246,26 @@ export default {
           //Visit
           this.neighborCurrX = neighbour.x;
           this.neighbourCurrY = neighbour.y;
-          console.log(neighbour)
-          console.log(`Visiting neighbor: (x: ${neighbour.x}, y: ${neighbour.y})`)
+          console.log(neighbour);
+          console.log(
+            `Visiting neighbor: (x: ${neighbour.x}, y: ${neighbour.y})`
+          );
           if (neighbour.color == "white") {
-            console.log(`White neighbor: (x: ${neighbour.x}, y: ${neighbour.y})`)
-            neighbour.color = "green"
-            this.$emit("visitedColorChange");
-            neighbour.dist = currentNode.dist + 1
-            queue.enqueue(neighbour)
+            console.log(
+              `White neighbor: (x: ${neighbour.x}, y: ${neighbour.y})`
+            );
+            neighbour.color = "green";
+            this.$emit("visitedColorChange", neighbour.x, neighbour.y);
+            neighbour.dist = currentNode.dist + 1;
+            queue.enqueue(neighbour);
           }
         }
         // console.log(queue.items)
-        currentNode.color = "blue"
+        currentNode.color = "blue";
         this.$emit("finishedColorChange");
       }
       return visited;
-
     }
-  },
-
-}
+  }
+};
 </script>

@@ -4,11 +4,11 @@
     class="grid-cell"
     :class="{start: isStart, dest: isDest, visited: isVisited, finished: isFinished}"
   >
-
   </div>
 </template>
 
 <script>
+//import GridNode from "@/search-algorithms/bfs/GridNode.js";
 export default {
   props: {
     x: {
@@ -22,45 +22,42 @@ export default {
     gridData: {
       type: Object
     },
-
     color: {
       type: String,
       default: "white"
-
+    },
+    gridNode: {
+      type: Object
     }
-
+  },
+  mounted () {
+    console.log(this.gridNode);
   },
   computed: {
-    isStart () {
-      return this.gridData.startX === this.x && this.gridData.startY === this.y
+    isStart() {
+      return this.gridData.startX === this.x && this.gridData.startY === this.y;
     },
 
-    isDest () {
-      return this.gridData.destX === this.x && this.gridData.destY === this.y
+    isDest() {
+      return this.gridData.destX === this.x && this.gridData.destY === this.y;
     },
 
-    isVisited(){
-      return this.color === "green"
-
+    isVisited() {
+      return this.gridNode.color === "green";
     },
 
-
-    isFinished(){
-      return this.color === "blue"
-
-
-
+    isFinished() {
+      return this.gridNode.color === "blue";
     }
-
-  },
-}
+  }
+};
 </script>
 
 
 <style>
 .grid-cell {
-  height: 18px;
-  width: 18px;
+  height: 32px;
+  width: 32px;
   border: solid 0.3px;
   border-color: #343434;
 }
@@ -76,7 +73,6 @@ export default {
 .visited {
   background-color: green;
 }
-
 
 .finished {
   background-color: blue;
