@@ -2,7 +2,7 @@
   <div
     @click="$emit('onGridCellClicked', x, y)"
     class="grid-cell"
-    :class="{start: isStart, dest: isDest, visited: isVisited, finished: isFinished}"
+    :class="{start: isStart, dest: isDest, visited: isVisited && !isStart && !isDest, finished: isFinished && !isStart && !isDest}"
   >
   </div>
 </template>

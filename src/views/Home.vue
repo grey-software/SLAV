@@ -1,6 +1,8 @@
 <template>
   <div class="home">
     <div class="title">Searching & Learning Algorithm Visualizer</div>
+    <input ref="rowInput" class="inputStyle">
+    <input ref="colInput" class="inputStyle">
 
     <div class="my-2">
       <v-btn @click="runBfs" :disabled="selectionState != 'ready'" color="primary">Visualize</v-btn>
@@ -49,9 +51,16 @@ import VueToast from "vue-toast-notification";
 import "vue-toast-notification/dist/theme-default.css";
 // @ is an alias to /src
 
-const GRID_MAX_Y = 3;
-const GRID_MAX_X = 3;
+//const GRID_MAX_Y = 50;
+//const GRID_MAX_X = 50;
+var rowBox = this.$refs.rowInput;
+var colBox = this.$refs.colInput;
 
+this.setDimensions(rowBox, colBox);
+
+
+
+ 
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
@@ -77,8 +86,8 @@ export default {
       currY: 0,
       neighborCurrX: 0,
       neighbourCurrY: 0,
-      gridMaxY: GRID_MAX_Y,
-      gridMaxX: GRID_MAX_X,
+      gridMaxX: parseInt(this.$refs.rowInput.innerText,10),
+      gridMaxY: parseInt(this.$refs.colInput.innerText,10),
       selectionState: "pick-start",
       selectionStateLabels: {
         "pick-start": "Pick the starting node!",
@@ -105,9 +114,30 @@ export default {
     }
   },
   mounted () {
-      this.graph = this.createGraph(this.gridMaxY, this.gridMaxX);
+      if(this.gridMaxX > 0 && this.gridMaxY > 0){
+        this.graph = this.createGraph(this.gridMaxY, this.gridMaxX);
+      }
   },
   methods: {
+    /*setDimensions(rowBox, colBox){
+        rowBox.addEventListener("keydown", function(event) {
+          alert("Reached");
+          //Enter key is pressed
+          if(event.keyCode == 13){
+            rowBox.disabled = true;
+          }
+        })
+        colBox.addEventListener("keydown", function(event) {
+          //Enter key is pressed
+          if(event.keyCode == 13){
+            colBox.disabled = true;
+          
+
+          }
+        })
+
+    },*/
+
     getGridNodeForCell(x, y) {
       console.log(this.graph[`(${x},${y})`])
       return this.graph[`(${x},${y})`]
@@ -202,6 +232,8 @@ export default {
       }
     },
 
+  
+
     runBfs() {
       const startNode = this.graph[`(${this.startX},${this.startY})`]
       console.log(startNode)
@@ -269,3 +301,18 @@ export default {
   }
 };
 </script>
+
+
+<style>
+  .inputStyle{
+    margin: 2px;
+    border: solid 2px;
+    border-color: black;
+
+
+  }
+
+
+
+
+</style>
