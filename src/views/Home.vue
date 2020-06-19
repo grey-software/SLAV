@@ -30,7 +30,7 @@
       clipped-left
     >
       <v-app-bar-nav-icon @click.stop="drawer = !drawer"></v-app-bar-nav-icon>
-      <v-toolbar-title>Application</v-toolbar-title>
+      <v-toolbar-title>SLAV</v-toolbar-title>
     </v-app-bar>
 
   
@@ -55,7 +55,7 @@
     </v-row>
     <div class="my-2">
       <v-btn @click="runBfs" :disabled="selectionState != 'ready' || isAlgorithmRunning" color="primary">Visualize</v-btn>
-      <v-btn @click="resetGrid" :disabled=!isAlgorithmRunning color="red">Reset Grid</v-btn>
+      <v-btn @click="resetGrid" :disabled="!isAlgorithmRunning && !isAlgorithmFinished" color="red">Reset Grid</v-btn>
     </div>
 
     <div class="subtitle">
@@ -104,7 +104,7 @@ import Queue from "../search-algorithms/bfs/Queue";
 // Import one of available themes
 // @ is an alias to /src
 
-const GRID_MAX_Y = 10;
+const GRID_MAX_Y = 9;
 const GRID_MAX_X = 35;
 
 function sleep(ms) {
@@ -144,6 +144,7 @@ export default {
       rowCount: GRID_MAX_Y,
       columnCount: GRID_MAX_X,
       isAlgorithmRunning: false,
+      isAlgorithmFinished: false,
       path: [],
       delayFactor: 200
     };
@@ -273,6 +274,7 @@ export default {
         this.path[i].color = "purple"
       }
       this.isAlgorithmRunning = false;
+      this.isAlgorithmFinished = true;
     },
     onGridCellClicked(x, y) {
       switch (this.selectionState) {
