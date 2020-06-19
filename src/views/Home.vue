@@ -1,11 +1,61 @@
 <template>
-  <div class="home">
-    <div class="title">Searching & Learning Algorithm Visualizer</div>
-    <input ref="rowInput" class="inputStyle">
-    <input ref="colInput" class="inputStyle">
+  <v-container class="home p-4">
+    <v-navigation-drawer
+      v-model="drawer"
+      app
+      clipped
+    >
+      <v-list dense>
+        <v-list-item link>
+          <v-list-item-action>
+            <v-icon>mdi-view-dashboard</v-icon>
+          </v-list-item-action>
+          <v-list-item-content>
+            <v-list-item-title>Algorithms</v-list-item-title>
+          </v-list-item-content>
+        </v-list-item>
+        <v-list-item link>
+          <v-list-item-action>
+            <v-icon>mdi-cog</v-icon>
+          </v-list-item-action>
+          <v-list-item-content>
+            <v-list-item-title>Settings</v-list-item-title>
+          </v-list-item-content>
+        </v-list-item>
+      </v-list>
+    </v-navigation-drawer>
 
+    <v-app-bar
+      app
+      clipped-left
+    >
+      <v-app-bar-nav-icon @click.stop="drawer = !drawer"></v-app-bar-nav-icon>
+      <v-toolbar-title>Application</v-toolbar-title>
+    </v-app-bar>
+
+  
+    <div class="title">Grid Dimensions</div>
+    <v-row>
+      <v-col cols="3">
+      <v-text-field
+        label="Grid Rows"
+        :disabled="isAlgorithmRunning"
+        v-model.number="rowCount"
+        class="inputStyle"
+      />
+      </v-col>
+      <v-col cols="3">
+      <v-text-field
+        label="Grid Columns"
+        :disabled="isAlgorithmRunning"
+        v-model.number="columnCount"
+        class="inputStyle"
+      />
+      </v-col>
+    </v-row>
     <div class="my-2">
-      <v-btn @click="runBfs" :disabled="selectionState != 'ready'" color="primary">Visualize</v-btn>
+      <v-btn @click="runBfs" :disabled="selectionState != 'ready' || isAlgorithmRunning" color="primary">Visualize</v-btn>
+      <v-btn @click="resetGrid" :disabled=!isAlgorithmRunning color="red">Reset Grid</v-btn>
     </div>
 
     <div class="subtitle">
@@ -23,11 +73,16 @@
       tick-size="4"
     ></v-slider>
 
-    <div v-if="Object.keys(graph).length > 0" id="visualizer" class="ml-5 mt-5">
+    <div
+      :key="`${rowCount}x${columnCount}`"
+      v-if="Object.keys(graph).length > 0"
+      id="visualizer"
+      class="ml-5 mt-5"
+    >
       <!-- Look for good svg graphics library to render graph -->
       <!-- for(var i = 0; i<30; i++) -->
-      <div v-for="i in gridMaxY" :key="i" class="flex">
-        <div v-for="j in gridMaxX" :key="j">
+      <div v-for="i in rowCount" :key="i" class="flex">
+        <div v-for="j in columnCount" :key="j">
           <grid-cell
             :x="j - 1"
             :y="i - 1"
@@ -38,29 +93,20 @@
         </div>
       </div>
     </div>
-  </div>
+  </v-container>
 </template>
 
 <script>
 //import graph from '../search-algorithms/bfs/test-bfs'
 import GridNode from "../search-algorithms/bfs/GridNode";
 import Queue from "../search-algorithms/bfs/Queue";
-import Vue from "vue";
-import VueToast from "vue-toast-notification";
+
 // Import one of available themes
-import "vue-toast-notification/dist/theme-default.css";
 // @ is an alias to /src
 
-//const GRID_MAX_Y = 50;
-//const GRID_MAX_X = 50;
-var rowBox = this.$refs.rowInput;
-var colBox = this.$refs.colInput;
+const GRID_MAX_Y = 10;
+const GRID_MAX_X = 35;
 
-this.setDimensions(rowBox, colBox);
-
-
-
- 
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
@@ -86,17 +132,27 @@ export default {
       currY: 0,
       neighborCurrX: 0,
       neighbourCurrY: 0,
-      gridMaxX: parseInt(this.$refs.rowInput.innerText,10),
-      gridMaxY: parseInt(this.$refs.colInput.innerText,10),
+      gridMaxX: GRID_MAX_X,
+      gridMaxY: GRID_MAX_Y,
       selectionState: "pick-start",
       selectionStateLabels: {
         "pick-start": "Pick the starting node!",
         "pick-dest": "Pick the destination node!",
         ready: "You're ready to visualize!"
       },
-      graph: {}
+      graph: {},
+      rowCount: GRID_MAX_Y,
+      columnCount: GRID_MAX_X,
+      isAlgorithmRunning: false,
+      path: [],
+      delayFactor: 200
     };
   },
+
+  created () {
+      this.$vuetify.theme.dark = true
+    },
+    
   computed: {
     vizSpeed() {
       return this.vizSpeedOptions[this.vizSpeedIndex];
@@ -106,41 +162,25 @@ export default {
         startX: this.startX,
         startY: this.startY,
         destX: this.destX,
-        destY: this.destY,
-        currX: this.currX,
-        currY: this.currY,
-        nodeList: []
+        destY: this.destY
       };
     }
   },
-  mounted () {
-      if(this.gridMaxX > 0 && this.gridMaxY > 0){
-        this.graph = this.createGraph(this.gridMaxY, this.gridMaxX);
-      }
+  mounted() {
+    this.graph = this.createGraph(this.rowCount, this.columnCount);
   },
   methods: {
-    /*setDimensions(rowBox, colBox){
-        rowBox.addEventListener("keydown", function(event) {
-          alert("Reached");
-          //Enter key is pressed
-          if(event.keyCode == 13){
-            rowBox.disabled = true;
-          }
-        })
-        colBox.addEventListener("keydown", function(event) {
-          //Enter key is pressed
-          if(event.keyCode == 13){
-            colBox.disabled = true;
-          
+    resetGrid(){
+      window.location.reload();
 
-          }
-        })
+    },
 
-    },*/
 
     getGridNodeForCell(x, y) {
-      console.log(this.graph[`(${x},${y})`])
-      return this.graph[`(${x},${y})`]
+      if (!this.graph[`(${x},${y})`]) {
+        console.log(`(${x},${y})`);
+      }
+      return this.graph[`(${x},${y})`];
     },
     onVisitedColorChange(x, y) {
       console.log(x);
@@ -223,22 +263,16 @@ export default {
       }
       return nodeDict;
     },
-
-    changeColor(cell, x, y, newColor) {
-      if (x == this.neighborCurrX && y == this.neighbourCurrY) {
-        cell.color = newColor;
-        Vue.use(VueToast);
-        Vue.$toast.open("Reached");
+    async runBfs() {
+      const startNode = this.graph[`(${this.startX},${this.startY})`];
+      const endNode = this.graph[`(${this.destX},${this.destY})`];
+      console.log(startNode);
+      this.isAlgorithmRunning = true;
+      this.path = await this.bfs(this.graph, startNode, endNode);
+      for (let i = this.path.length - 1; i >= 0; i--) {
+        this.path[i].color = "purple"
       }
-    },
-
-  
-
-    runBfs() {
-      const startNode = this.graph[`(${this.startX},${this.startY})`]
-      console.log(startNode)
-      const visited = this.bfs(this.graph, startNode);
-      console.log(visited)
+      this.isAlgorithmRunning = false;
     },
     onGridCellClicked(x, y) {
       switch (this.selectionState) {
@@ -259,44 +293,70 @@ export default {
         }
       }
     },
-    async bfs(graph, start) {
-      const visited = [];
 
+    /*async dfs(graph, startNode, endNode){
+      const visited = [];
+      var count = 0;
+      for (node in graph){
+        if(node.color == "white"){
+          dfs_visit(graph, node);
+
+
+        }
+      }
+    },
+
+
+    async dfs_visit(graph, node){
+      node.color = "grey";
+
+
+
+    }*/
+
+
+
+    async bfs(graph, startNode, endNode) {
+      const visited = [];
       const queue = new Queue();
-      start.dist = 0;
-      queue.enqueue(start);
+      startNode.dist = 0;
+      queue.enqueue(startNode);
       while (!queue.isEmpty()) {
         const currentNode = queue.dequeue();
         this.currX = currentNode.x;
         this.currY = currentNode.y;
-        await sleep(600);
+        await sleep(this.delayFactor/this.vizSpeedOptions[this.vizSpeedIndex]);
         visited.push(currentNode);
         currentNode.color = "green";
-        this.$emit("visitedColorChange");
+        var iterNode = currentNode;
+        if (iterNode.x == endNode.x && iterNode.y == endNode.y) {
+          //Iterate back up the parents until you find the null parent
+          var path = [];
+          while (!(iterNode.x == startNode.x && iterNode.y == startNode.y)) {
+            path.push(iterNode);
+            console.log(iterNode);
+            console.log(iterNode.parent);
+            iterNode = iterNode.parent;
+          }
+          console.log(path);
+          return path;
+        }
+
         //View node's color should observe model node's color
         for (const neighbour of currentNode.adj) {
           //Visit
-          this.neighborCurrX = neighbour.x;
-          this.neighbourCurrY = neighbour.y;
-          console.log(neighbour);
-          console.log(
-            `Visiting neighbor: (x: ${neighbour.x}, y: ${neighbour.y})`
-          );
+          if (neighbour.parent == null) {
+            neighbour.parent = currentNode;
+          }
           if (neighbour.color == "white") {
-            console.log(
-              `White neighbor: (x: ${neighbour.x}, y: ${neighbour.y})`
-            );
             neighbour.color = "green";
-            this.$emit("visitedColorChange", neighbour.x, neighbour.y);
             neighbour.dist = currentNode.dist + 1;
             queue.enqueue(neighbour);
           }
         }
         // console.log(queue.items)
         currentNode.color = "blue";
-        this.$emit("finishedColorChange");
       }
-      return visited;
     }
   }
 };
@@ -304,15 +364,7 @@ export default {
 
 
 <style>
-  .inputStyle{
-    margin: 2px;
-    border: solid 2px;
-    border-color: black;
-
-
-  }
-
-
+  
 
 
 </style>
