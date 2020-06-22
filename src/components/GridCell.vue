@@ -2,9 +2,15 @@
   <div
     @click="$emit('onGridCellClicked', x, y)"
     class="grid-cell"
-    :class="{start: isStart, dest: isDest, visited: isVisited && !isStart && !isDest, finished: isFinished && !isStart && !isDest}"
-  >
-  </div>
+    :class="{
+      visited: isVisited && !isStart && !isDest,
+      finished: isFinished && !isStart && !isDest,
+      path: isPartOfPath,
+      start: isStart,
+      dest: isDest,
+      wall: isWall,
+    }"
+  ></div>
 </template>
 
 <script>
@@ -13,25 +19,22 @@ export default {
   props: {
     x: {
       type: Number,
-      default: 0
+      default: 0,
     },
     y: {
       type: Number,
-      default: 0
+      default: 0,
     },
     gridData: {
-      type: Object
+      type: Object,
     },
     color: {
       type: String,
-      default: "white"
+      default: "white",
     },
     gridNode: {
-      type: Object
-    }
-  },
-  mounted () {
-    console.log(this.gridNode);
+      type: Object,
+    },
   },
   computed: {
     isStart() {
@@ -48,11 +51,16 @@ export default {
 
     isFinished() {
       return this.gridNode.color === "blue";
-    }
-  }
+    },
+    isPartOfPath() {
+      return this.gridNode.color === "purple";
+    },
+    isWall() {
+      return this.gridNode.color === "orange";
+    },
+  },
 };
 </script>
-
 
 <style>
 .grid-cell {
@@ -76,5 +84,13 @@ export default {
 
 .finished {
   background-color: blue;
+}
+
+.path {
+  background-color: purple;
+}
+
+.wall {
+  background-color: orange;
 }
 </style>
