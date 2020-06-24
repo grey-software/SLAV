@@ -5,5 +5,8 @@ module.exports = class GridNode {
         this.dist = 1000;
         this.adj = [];
         this.color = "white";
+        this.parent = null;
+        this.time = 0;
+        
     }
 }

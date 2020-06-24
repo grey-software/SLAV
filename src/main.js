@@ -3,8 +3,12 @@ import App from './App.vue'
 import router from './router'
 import store from './store'
 import vuetify from './plugins/vuetify';
+import drag from "v-drag"
+
 
 Vue.config.productionTip = false
+
+Vue.use(drag);
 
 new Vue({
   router,
