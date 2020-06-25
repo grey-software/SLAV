@@ -14,7 +14,7 @@
 </template>
 
 <script>
-//import GridNode from "@/search-algorithms/bfs/GridNode.js";
+import {VISITED, EXPLORED, WALL, PATH} from "../search-algorithms/utils/constants.js"
 export default {
   props: {
     x: {
@@ -46,17 +46,17 @@ export default {
     },
 
     isVisited() {
-      return this.gridNode.color === "green";
+      return this.gridNode.state === VISITED;
     },
 
     isFinished() {
-      return this.gridNode.color === "blue";
+      return this.gridNode.state === EXPLORED;
     },
     isPartOfPath() {
-      return this.gridNode.color === "purple";
+      return this.gridNode.state === PATH;
     },
     isWall() {
-      return this.gridNode.color === "orange";
+      return this.gridNode.state === WALL;
     },
   },
 };

@@ -1,42 +1,5 @@
 <template>
   <v-container class="home p-4">
-    <v-navigation-drawer v-model="drawer" app clipped>
-      <v-list dense>
-        <v-list-item link>
-          <v-list-item-action>
-            <v-icon>mdi-view-dashboard</v-icon>
-          </v-list-item-action>
-          <v-menu offset-y>
-            <template v-slot:activator="{ on, attrs }">
-              <v-btn color="primary" dark v-bind="attrs" v-on="on">Algorithms</v-btn>
-            </template>
-            <v-list>
-              <v-list-item>
-                <v-list-item-title v-model="currentAlgorithm">{{currentAlgorithm}}</v-list-item-title>
-              </v-list-item>
-
-              <v-list-item @click="setAlgorithm('BFS')">
-                <v-list-item-title>BFS</v-list-item-title>
-              </v-list-item>
-
-              <v-list-item @click="setAlgorithm('DFS')">
-                <v-list-item-title>DFS</v-list-item-title>
-              </v-list-item>
-            </v-list>
-          </v-menu>
-        </v-list-item>
-
-        <v-list-item link>
-          <v-list-item-action>
-            <v-icon>mdi-cog</v-icon>
-          </v-list-item-action>
-          <v-list-item-content>
-            <v-list-item-title>Settings</v-list-item-title>
-          </v-list-item-content>
-        </v-list-item>
-      </v-list>
-    </v-navigation-drawer>
-
     <v-app-bar app clipped-left>
       <v-app-bar-nav-icon @click.stop="drawer = !drawer"></v-app-bar-nav-icon>
       <v-toolbar-title>SLAV</v-toolbar-title>
@@ -61,13 +24,14 @@
         />
       </v-col>
 
-      <v-col>
-        <v-btn 
-        color="primary" 
-        dark v-bind="attrs" 
-        v-on="on">
-        Algorithms</v-btn>
-      
+      <v-col class="d-flex" cols="6" sm="6">
+        <v-select
+          :items="Algorithms"
+          filled
+          label="Searching Algorithm"
+          background-color="blue"
+          v-model="currentAlgorithm"
+        ></v-select>
       </v-col>
     </v-row>
     <div class="my-2">
@@ -76,19 +40,27 @@
         @click="runAlgorithm(currentAlgorithm)"
         :disabled="selectionState != 'ready' || isAlgorithmRunning"
         color="primary"
-      >Visualize</v-btn>
+        >Visualize</v-btn
+      >
       <v-btn
         @click="resetGrid"
         :disabled="!isAlgorithmRunning && !isAlgorithmFinished"
         color="red"
-      >Reset Grid</v-btn>
+        >Reset Grid</v-btn
+      >
     </div>
 
     <div class="subtitle">
       <p>Visualiztion Speed: {{ vizSpeed }}</p>
       <p>Current Position: (x: {{ currX }}, y: {{ currY }})</p>
       <p>State: {{ selectionStateLabels[selectionState] }}</p>
-      <p>Walls: {{ Object.keys(graph).filter(coors => graph[coors].color == "orange").length }}</p>
+      <p>
+        Walls:
+        {{
+          Object.keys(graph).filter((coors) => graph[coors].color == "orange")
+            .length
+        }}
+      </p>
     </div>
 
     <v-slider
@@ -127,20 +99,24 @@
 <script>
 //import graph from '../search-algorithms/bfs/test-bfs'
 import GridNode from "../search-algorithms/bfs/GridNode";
-import Queue from "../search-algorithms/bfs/Queue";
-import Stack from "../search-algorithms/dfs/Stack";
-import VueDropdown from "vue-dynamic-dropdown";
-import Vue from "vue";
+import Queue from "../search-algorithms/utils/Queue";
+import Stack from "../search-algorithms/utils/Stack";
+import {
+  EMPTY,
+  VISITED,
+  EXPLORED,
+  WALL,
+  PATH,
+} from "../search-algorithms/utils/constants.js";
 
 // Import one of available themes
 // @ is an alias to /src
 
 const GRID_MAX_Y = 10;
 const GRID_MAX_X = 10;
-Vue.component("vue-dropdown", VueDropdown);
 
 function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 import GridCell from "@/components/GridCell.vue";
@@ -148,12 +124,12 @@ import GridCell from "@/components/GridCell.vue";
 export default {
   name: "Home",
   components: {
-    GridCell
+    GridCell,
   },
   data() {
     return {
       drawer: true,
-      Algorithms: [{ title: "bfs" }, { title: "dfs" }],
+      Algorithms: ["DFS", "BFS"],
       vizSpeedIndex: 2,
       vizSpeedOptions: [0.25, 0.5, 1, 1.5, 2, 3],
       startX: null,
@@ -168,7 +144,7 @@ export default {
       selectionStateLabels: {
         "pick-start": "Pick the starting node!",
         "pick-dest": "Pick the destination node!",
-        ready: "You're ready to visualize!"
+        ready: "You're ready to visualize!",
       },
       graph: {},
       rowCount: GRID_MAX_Y,
@@ -178,7 +154,7 @@ export default {
       path: [],
       delayFactor: 200,
       wallCoordinates: new Set(),
-      currentAlgorithm: "DFS"
+      currentAlgorithm: "DFS",
     };
   },
 
@@ -196,12 +172,14 @@ export default {
         startY: this.startY,
         destX: this.destX,
         destY: this.destY,
-        wallCoordinates: this.wallCoordinates
+        wallCoordinates: this.wallCoordinates,
       };
-    }
+    },
   },
   mounted() {
     this.graph = this.createGraph(this.rowCount, this.columnCount);
+    console.log(VISITED);
+    console.log(EMPTY);
   },
   methods: {
     resetGrid() {
@@ -214,8 +192,9 @@ export default {
       this.graph = this.createGraph(this.rowCount, this.columnCount);
       this.wallCoordinates = new Set();
       this.path = [];
-      this.selectionState = "pick-start"
-      this.isAlgorithmFinished = false
+      this.selectionState = "pick-start";
+      this.isAlgorithmFinished = false;
+      this.isAlgorithmRunning = false;
     },
     addWall(wallCoordinate) {
       //Find coordiante by (x,y)
@@ -293,7 +272,7 @@ export default {
       var currNode = new GridNode(0, 0);
       var cell = "";
       var nodeDict = {
-        "(0,0)": currNode
+        "(0,0)": currNode,
       };
       for (var j = 0; j < rows; j++) {
         for (var i = 0; i < cols; i++) {
@@ -346,13 +325,13 @@ export default {
         this.path = await this.dfs(this.graph, startNode, endNode);
       }
       for (let i = this.path.length - 1; i >= 0; i--) {
-        this.path[i].color = "purple";
+        this.path[i].state = PATH;
         await sleep(50);
       }
 
       this.isAlgorithmRunning = false;
       this.isAlgorithmFinished = true;
-      this.selectionState = "pick-start"
+      this.selectionState = "pick-start";
     },
 
     async dfs(graph, startNode, endNode) {
@@ -371,16 +350,14 @@ export default {
         if (iterNode.x == endNode.x && iterNode.y == endNode.y) {
           return this.drawPath(iterNode, startNode);
         }
-        currentNode.color = "green";
+        currentNode.state = VISITED;
         await sleep(
           this.delayFactor / this.vizSpeedOptions[this.vizSpeedIndex]
         );
         console.log(currentNode.adj);
         for (const neighbour of currentNode.adj) {
-          console.log(`The current neighbour(${neighbour.x},${neighbour.x})`);
-          if (neighbour.color != "orange") {
-            if (neighbour.color == "white") {
-              //neighbour.color = "green"
+          if (neighbour.state != WALL) {
+            if (neighbour.state == EMPTY) {
               stack.push(neighbour);
             }
 
@@ -389,32 +366,8 @@ export default {
             }
           }
         }
-        currentNode.color = "blue";
+        currentNode.state = EXPLORED;
       }
-
-      /*if (currentNode.color != "orange") {
-        currentNode.color = "green";
-      }
-      await sleep(
-          this.delayFactor / this.vizSpeedOptions[this.vizSpeedIndex]
-      );
-      //console.log(`Visiting (${currentNode.x},${currentNode.y})`);
-      var iterNode = currentNode;
-      if(iterNode.x == endNode.x && iterNode.y == endNode.y){
-        //Trace back to start node and draw a path
-        return this.drawPath(iterNode, startNode);
-      }
-      for (const neighbour of currentNode.adj) {
-        if(neighbour.color != "orange"){         
-          if (neighbour.color == "white") {  
-            if (neighbour.parent == null) {
-              neighbour.parent = currentNode;
-            }
-            await this.dfsVisit(graph, neighbour, startNode, endNode);
-          }
-        }
-      }
-      currentNode.color = "blue";*/
     },
 
     async bfs(graph, startNode, endNode) {
@@ -427,9 +380,9 @@ export default {
         await sleep(
           this.delayFactor / this.vizSpeedOptions[this.vizSpeedIndex]
         );
-        if (currentNode.color != "orange") {
+        if (currentNode.state != WALL) {
           //visited.push(currentNode);
-          currentNode.color = "green";
+          currentNode.state = VISITED;
         }
 
         var iterNode = currentNode;
@@ -440,20 +393,20 @@ export default {
         //View node's color should observe model node's color
         for (const neighbour of currentNode.adj) {
           //Only interact with non-wall nodes
-          if (neighbour.color != "orange") {
+          if (neighbour.state != WALL) {
             //Visit
             if (neighbour.parent == null) {
               neighbour.parent = currentNode;
             }
-            if (neighbour.color == "white") {
-              neighbour.color = "green";
+            if (neighbour.state == EMPTY) {
+              neighbour.state = VISITED;
               neighbour.dist = currentNode.dist + 1;
               queue.enqueue(neighbour);
             }
           }
         }
         // console.log(queue.items)
-        currentNode.color = "blue";
+        currentNode.state = EXPLORED;
       }
     },
 
@@ -472,8 +425,8 @@ export default {
 
     setAlgorithm(name) {
       this.currentAlgorithm = name;
-    }
-  }
+    },
+  },
 };
 </script>
 
