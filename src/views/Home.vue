@@ -5,7 +5,7 @@
       <v-toolbar-title>SLAV</v-toolbar-title>
     </v-app-bar>
 
-    <div class="title">Grid Dimensions</div>
+    <!-- <div class="title">Grid Dimensions</div>-->
     <v-row>
       <v-col cols="3">
         <v-text-field
@@ -29,38 +29,36 @@
           :items="Algorithms"
           filled
           label="Searching Algorithm"
-          background-color="blue"
+          dense
+          solo
           v-model="currentAlgorithm"
         ></v-select>
       </v-col>
     </v-row>
     <div class="my-2">
       <v-btn
-        class="mr-2"
+        class="glowButton"
         @click="runAlgorithm(currentAlgorithm)"
         :disabled="selectionState != 'ready' || isAlgorithmRunning"
         color="primary"
-        >Visualize</v-btn
-      >
+      >Visualize</v-btn>
       <v-btn
         @click="resetGrid"
         :disabled="!isAlgorithmRunning && !isAlgorithmFinished"
         color="red"
-        >Reset Grid</v-btn
-      >
+      >Reset Grid</v-btn>
     </div>
 
     <div class="subtitle">
-      <p>Visualiztion Speed: {{ vizSpeed }}</p>
       <p>Current Position: (x: {{ currX }}, y: {{ currY }})</p>
-      <p>State: {{ selectionStateLabels[selectionState] }}</p>
-      <p>
+      <p>{{ selectionStateLabels[selectionState] }}</p>
+      <!--<p>
         Walls:
         {{
           Object.keys(graph).filter((coors) => graph[coors].color == "orange")
             .length
         }}
-      </p>
+      </p>-->
     </div>
 
     <v-slider
@@ -106,30 +104,31 @@ import {
   VISITED,
   EXPLORED,
   WALL,
-  PATH,
+  PATH
 } from "../search-algorithms/utils/constants.js";
 
 // Import one of available themes
 // @ is an alias to /src
 
-const GRID_MAX_Y = 10;
-const GRID_MAX_X = 10;
+const GRID_MAX_Y = 23;
+const GRID_MAX_X = 70;
 
 function sleep(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+  return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 import GridCell from "@/components/GridCell.vue";
+import { mapState, mapMutations } from "vuex";
 
 export default {
   name: "Home",
   components: {
-    GridCell,
+    GridCell
   },
   data() {
     return {
       drawer: true,
-      Algorithms: ["DFS", "BFS"],
+      Algorithms: ["BFS", "DFS", "A* Search"],
       vizSpeedIndex: 2,
       vizSpeedOptions: [0.25, 0.5, 1, 1.5, 2, 3],
       startX: null,
@@ -140,21 +139,19 @@ export default {
       currY: 0,
       gridMaxX: GRID_MAX_X,
       gridMaxY: GRID_MAX_Y,
-      selectionState: "pick-start",
+      // selectionState: "pick-start",
       selectionStateLabels: {
         "pick-start": "Pick the starting node!",
         "pick-dest": "Pick the destination node!",
-        ready: "You're ready to visualize!",
+        ready: "You're ready to visualize!"
       },
       graph: {},
       rowCount: GRID_MAX_Y,
       columnCount: GRID_MAX_X,
-      isAlgorithmRunning: false,
-      isAlgorithmFinished: false,
       path: [],
       delayFactor: 200,
       wallCoordinates: new Set(),
-      currentAlgorithm: "DFS",
+      currentAlgorithm: "BFS"
     };
   },
 
@@ -163,6 +160,11 @@ export default {
   },
 
   computed: {
+    ...mapState({
+      isAlgorithmFinished: "isAlgorithmFinished",
+      isAlgorithmRunning: "isAlgorithmRunning",
+      selectionState: "selectionState"
+    }),
     vizSpeed() {
       return this.vizSpeedOptions[this.vizSpeedIndex];
     },
@@ -172,16 +174,20 @@ export default {
         startY: this.startY,
         destX: this.destX,
         destY: this.destY,
-        wallCoordinates: this.wallCoordinates,
+        wallCoordinates: this.wallCoordinates
       };
-    },
+    }
   },
   mounted() {
-    this.graph = this.createGraph(this.rowCount, this.columnCount);
-    console.log(VISITED);
-    console.log(EMPTY);
+    this.graph = this.createGraphFix(this.rowCount, this.columnCount);
+    
   },
   methods: {
+    ...mapMutations([
+      "setIsAlgorithmFinished",
+      "setIsAlgorithmRunning",
+      "setSelectionState"
+    ]),
     resetGrid() {
       this.startX = null;
       this.startY = null;
@@ -189,12 +195,13 @@ export default {
       this.destY = null;
       this.currX = null;
       this.currY = null;
-      this.graph = this.createGraph(this.rowCount, this.columnCount);
+      this.graph = this.createGraphFix(this.rowCount, this.columnCount);
       this.wallCoordinates = new Set();
       this.path = [];
-      this.selectionState = "pick-start";
-      this.isAlgorithmFinished = false;
-      this.isAlgorithmRunning = false;
+      //this.selectionState = "pick-start";
+      this.setSelectionState("pick-start");
+      this.setIsAlgorithmFinished(false);
+      this.setIsAlgorithmRunning(false);
     },
     addWall(wallCoordinate) {
       //Find coordiante by (x,y)
@@ -203,58 +210,59 @@ export default {
 
     getGridNodeForCell(x, y) {
       if (!this.graph[`(${x},${y})`]) {
-        console.log(`(${x},${y})`);
+        //console.log(`(${x},${y})`);
       }
       return this.graph[`(${x},${y})`];
     },
-    onVisitedColorChange(x, y) {
+    /*onVisitedColorChange(x, y) {
       console.log(x);
       console.log(y);
-    },
-    addNeighbours(j, i, currNode, nodeDict, rows, cols) {
+    },*/
+    //Refer to fixed version below
+    /*addNeighbours(j, i, currNode, graph, rows, cols) {
       var cell = "";
       var adjNode;
 
       cell = "(" + (j + 1) + "," + i + ")";
-      if (cell in nodeDict) {
-        currNode.adj.push(nodeDict[cell]);
+      if (cell in graph) {
+        currNode.adj.push(graph[cell]);
       } else {
         adjNode = new GridNode(j + 1, i);
         if (j < rows - 1) {
-          nodeDict[cell] = adjNode;
-          currNode.adj.push(adjNode);
+         graph[cell] = adjNode;
+         currNode.adj.push(adjNode);
         }
       }
 
       cell = "(" + j + "," + (i + 1) + ")";
-      if (cell in nodeDict) {
-        currNode.adj.push(nodeDict[cell]);
+      if (cell in graph) {
+        currNode.adj.push(graph[cell]);
       } else {
         adjNode = new GridNode(j, i + 1);
         if (i < cols - 1) {
-          nodeDict[cell] = adjNode;
+         graph[cell] = adjNode;
           currNode.adj.push(adjNode);
         }
       }
 
       cell = "(" + (j - 1) + "," + i + ")";
-      if (cell in nodeDict) {
-        currNode.adj.push(nodeDict[cell]);
+      if (cell in graph) {
+        currNode.adj.push(graph[cell]);
       } else {
         adjNode = new GridNode(j - 1, i);
         if (j > 0) {
-          nodeDict[cell] = adjNode;
+         graph[cell] = adjNode;
           currNode.adj.push(adjNode);
         }
       }
 
       cell = "(" + j + "," + (i - 1) + ")";
-      if (cell in nodeDict) {
-        currNode.adj.push(nodeDict[cell]);
+      if (cell in graph) {
+        currNode.adj.push(graph[cell]);
       } else {
         adjNode = new GridNode(j + 1, i);
         if (i > 0) {
-          nodeDict[cell] = adjNode;
+         graph[cell] = adjNode;
           currNode.adj.push(adjNode);
         }
       }
@@ -268,42 +276,104 @@ export default {
      *  (1,0): GridNode
      * }
      */
-    createGraph(rows, cols) {
+    /*createGraph(rows, cols) {
       var currNode = new GridNode(0, 0);
       var cell = "";
-      var nodeDict = {
-        "(0,0)": currNode,
+      var graph = {
+        "(0,0)": currNode
       };
       for (var j = 0; j < rows; j++) {
         for (var i = 0; i < cols; i++) {
           cell = `(${i},${j})`;
-          //Check if the cell is not part of the wall
-          //if(!(cell in this.wallCoordinates)){
-          if (cell in nodeDict) {
-            currNode = nodeDict[cell];
+          if (cell in graph) {
+            currNode = graph[cell];
           } else {
-            currNode = new GridNode(i, j);
-            nodeDict[cell] = currNode;
+           currNode = new GridNode(i, j);
+           graph[cell] = currNode;
           }
-          this.addNeighbours(i, j, currNode, nodeDict, rows, cols);
+          this.addNeighbours(i, j, currNode, graph, rows, cols);
           //}
         }
       }
-      return nodeDict;
+      return graph;
+    },*/
+
+
+    addNeighboursFix(j, i, currNode, graph, rows, cols){
+      var adjNode;
+      var adjCell = `(${j+1},${i})`
+      if (j < rows - 1) {
+        adjNode = graph[adjCell];
+        if(adjNode != null){
+          currNode.adj.push(adjNode);
+        }
+      }
+
+      adjCell = `(${j},${i+1})`
+      if (i < cols - 1) {
+        adjNode = graph[adjCell];
+        if(adjNode != null){
+          currNode.adj.push(adjNode);
+        }
+      }
+
+      adjCell = `(${j-1},${i})`
+      if (j > 0) {
+        adjNode = graph[adjCell];
+        if(adjNode != null){
+          currNode.adj.push(adjNode);
+        }
+      }
+
+      adjCell = `(${j},${i-1})`     
+      if (i > 0) {
+        adjNode = graph[adjCell];
+        if(adjNode != null){
+          currNode.adj.push(adjNode);
+        }
+      }
+      //console.log(currNode.adj);
+      
+
+    },
+
+    createGraphFix(rows, cols){
+      var cell = "";
+      var graph = {};
+      for (let j = 0; j < rows; j++) {
+        for (let i = 0; i < cols; i++) {
+          cell = `(${i},${j})`;
+          let currNode = new GridNode(i, j);
+          graph[cell] = currNode;
+        }
+      }
+
+      for (let j = 0; j < rows; j++) {
+        for (let i = 0; i < cols; i++) {
+          cell = `(${i},${j})`;
+          let currNode = graph[cell];
+          this.addNeighboursFix(i, j, currNode, graph, rows, cols);
+        }
+      }
+      return graph;
+      
+      
     },
 
     onGridCellClicked(x, y) {
+      console.log(this.selectionState)
       switch (this.selectionState) {
         case "pick-start": {
           this.startX = x;
           this.startY = y;
-          this.selectionState = "pick-dest";
+          //this.selectionState = "pick-dest";
+          this.setSelectionState("pick-dest");
           break;
         }
         case "pick-dest": {
           this.destX = x;
           this.destY = y;
-          this.selectionState = "ready";
+          this.setSelectionState("ready");
           break;
         }
         case "ready": {
@@ -318,20 +388,25 @@ export default {
     async runAlgorithm(name) {
       const startNode = this.graph[`(${this.startX},${this.startY})`];
       const endNode = this.graph[`(${this.destX},${this.destY})`];
-      this.isAlgorithmRunning = true;
+      this.setIsAlgorithmRunning(true);
       if (name == "BFS") {
         this.path = await this.bfs(this.graph, startNode, endNode);
       } else if (name == "DFS") {
         this.path = await this.dfs(this.graph, startNode, endNode);
+      } else if(name == "A* Search"){
+        this.path = await this.A_Star(this.graph, startNode, endNode);
+
       }
       for (let i = this.path.length - 1; i >= 0; i--) {
         this.path[i].state = PATH;
         await sleep(50);
       }
 
-      this.isAlgorithmRunning = false;
-      this.isAlgorithmFinished = true;
-      this.selectionState = "pick-start";
+      this.setIsAlgorithmRunning(true);
+      this.setIsAlgorithmFinished(true);
+
+      // Convert to a mutation
+      this.setSelectionState("pick-start");
     },
 
     async dfs(graph, startNode, endNode) {
@@ -354,8 +429,11 @@ export default {
         await sleep(
           this.delayFactor / this.vizSpeedOptions[this.vizSpeedIndex]
         );
-        console.log(currentNode.adj);
+        if(currentNode.x == 0 && currentNode.y == 22){
+          console.log(currentNode);
+        }
         for (const neighbour of currentNode.adj) {
+          console.log(neighbour);
           if (neighbour.state != WALL) {
             if (neighbour.state == EMPTY) {
               stack.push(neighbour);
@@ -391,8 +469,10 @@ export default {
         }
 
         //View node's color should observe model node's color
+        console.log(currentNode.adj);
         for (const neighbour of currentNode.adj) {
           //Only interact with non-wall nodes
+          console.log(neighbour);
           if (neighbour.state != WALL) {
             //Visit
             if (neighbour.parent == null) {
@@ -410,6 +490,91 @@ export default {
       }
     },
 
+    async A_Star(startNode, endNode){
+      var openList = [];
+      var closedList = [];
+      openList.push(startNode);
+      var q;
+
+      while(openList.length != 0){
+        q = this.findMinNode(openList);
+        closedList.push(openList.pop(q));
+        if(q.x == endNode.x && q.y == endNode.y){
+          return this.drawPath(q, startNode);
+
+        } 
+        for(let neighbour in q.adj){
+          if(neighbour.parent == null){
+            neighbour.parent = q;
+
+          }  
+        }
+
+        for(let neighbour in q.adj){
+          if(closedList.includes(neighbour)){
+            neighbour.g = q.g + 1;
+            neighbour.h = ((neighbour.x - endNode.x) ** 2) + ((neighbour.y - endNode.y) ** 2)
+            neighbour.f = neighbour.g + neighbour.h
+
+
+
+          }
+
+          for(let open_node in openList){
+            if(open_node.x == neighbour.x && open_node.y == neighbour.y){
+              if(neighbour.g > open_node.g){
+                openList.push(open_node);
+                open_node.state = VISITED;
+
+              }
+
+
+            }
+
+
+          }
+
+        }
+
+        
+
+
+      }
+
+    },
+
+    /*generateSuccessors(q){
+      var successorsList = [];
+      var tempList = [];
+      for(let neighbour in q.adj){
+        successorsList.push(neighbour);
+
+      }
+      for(let neighbour in q.adj){
+        tempList = this.generateSuccessors(neighbour);
+        successorsList = successorsList.concat(tempList);
+
+      }
+      return successorsList;
+
+      
+      
+    },*/
+
+    findMinNode(lst){
+      var minValue = Infinity;
+      var choiceNode;
+      for(var node in lst){
+        if(node.f < minValue){
+          minValue = node.f;
+          choiceNode = node;
+        }
+
+      }
+      return choiceNode;
+
+    },
+
     drawPath(iterNode, startNode) {
       //Iterate back up the parents until you find the null parent
       var path = [];
@@ -421,18 +586,48 @@ export default {
       }
       console.log(path);
       return path;
-    },
-
-    setAlgorithm(name) {
-      this.currentAlgorithm = name;
-    },
-  },
+    }
+  }
 };
 </script>
 
 <style>
-.dropdown {
-  background-color: black;
-  width: 3px;
+@import url(https://fonts.googleapis.com/css?family=Roboto:900);
+
+.glowButton {
+  position: relative;
+  margin: auto;
+  padding-right: 1.5rem;
+  padding-left: 1.5rem;
+  font-size: 1rem;
+  line-height: 3rem;
+  text-decoration: none;
+  color: white;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: blue;
+  border-radius: 30px;
+  cursor: pointer;
+  user-select: none;
+  box-shadow: 0 0 0 0 #ec008c, 0.5rem 0.5rem 30px mix(black, #26115a, 50%);
+  transition: box-shadow 0.6s;
+}
+
+glowButton:hover {
+  box-shadow: 0 0 60px 2px #ec008c, 0.5rem 0.5rem 30px mix(black, #26115a, 50%);
+}
+
+glowButton:after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  bottom: 2px;
+  left: 2px;
+  border-radius: 30px;
+  background-image: linear-gradient(170deg, rgba(white, 0.3), rgba(white, 0));
+  pointer-events: none;
 }
 </style>

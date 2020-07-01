@@ -64,10 +64,10 @@ export default {
 
 <style>
 .grid-cell {
-  height: 32px;
-  width: 32px;
-  border: solid 0.3px;
-  border-color: #343434;
+  height: 16px;
+  width: 16px;
+  border: solid 0.2px;
+  border-color: white;
 }
 
 .start {
@@ -80,11 +80,60 @@ export default {
 
 .visited {
   background-color: green;
+  border-color: black;
+  animation-name: colorVisited;
+  animation-duration: 0.5s;
 }
 
 .finished {
+  height: 16px;
+  width: 16px;
+  margin: 0 auto;
   background-color: blue;
+  animation-name: colorFinished;
+  animation-duration: 0.5s;
+  animation-delay: 0;
+  animation-direction: alternate;
+  animation-iteration-count: 1;
+  animation-fill-mode: none;
+  animation-play-state: running;
+  border-color: black;
+ 
 }
+
+@keyframes colorVisited {
+  0% {
+    transform: scale(.1);
+    background-color: black;
+    border-radius: 100%;
+  }
+  50% {
+    background-color: darkgreen;
+  }
+  100% {
+    transform: scale(1.0);
+    background-color: green;
+  }
+  
+}
+
+@keyframes colorFinished {
+  0% {
+    transform: scale(.1);
+    background-color: green;
+    border-radius: 100%;
+  }
+  50% {
+    background-color: lightblue;
+  }
+  100% {
+    transform: scale(1.0);
+    background-color: blue;
+  }
+  
+}
+
+
 
 .path {
   background-color: purple;
