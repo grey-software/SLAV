@@ -14,29 +14,38 @@
 </template>
 
 <script>
-import {VISITED, EXPLORED, WALL, PATH} from "../search-algorithms/utils/constants.js"
+import {
+  VISITED,
+  EXPLORED,
+  WALL,
+  PATH
+} from "../search-algorithms/utils/constants.js";
+import { mapState } from "vuex";
+
 export default {
   props: {
     x: {
       type: Number,
-      default: 0,
+      default: 0
     },
     y: {
       type: Number,
-      default: 0,
+      default: 0
     },
     gridData: {
-      type: Object,
+      type: Object
     },
     color: {
       type: String,
-      default: "white",
-    },
-    gridNode: {
-      type: Object,
-    },
+      default: "white"
+    }
   },
+  //Here we are making sure our gridCell is in sync with the gridNode model
   computed: {
+    ...mapState({ graph: "graph" }),
+    gridNode() {
+      return this.graph[`(${this.x},${this.y})`];
+    },
     isStart() {
       return this.gridData.startX === this.x && this.gridData.startY === this.y;
     },
@@ -46,6 +55,10 @@ export default {
     },
 
     isVisited() {
+      //console.log(this.gridNode)
+      if (!this.gridNode) {
+        console.log(`(${this.x},${this.y})`);
+      }
       return this.gridNode.state === VISITED;
     },
 
@@ -57,8 +70,8 @@ export default {
     },
     isWall() {
       return this.gridNode.state === WALL;
-    },
-  },
+    }
+  }
 };
 </script>
 
@@ -98,12 +111,11 @@ export default {
   animation-fill-mode: none;
   animation-play-state: running;
   border-color: black;
- 
 }
 
 @keyframes colorVisited {
   0% {
-    transform: scale(.1);
+    transform: scale(0.1);
     background-color: black;
     border-radius: 100%;
   }
@@ -111,15 +123,14 @@ export default {
     background-color: darkgreen;
   }
   100% {
-    transform: scale(1.0);
+    transform: scale(1);
     background-color: green;
   }
-  
 }
 
 @keyframes colorFinished {
   0% {
-    transform: scale(.1);
+    transform: scale(0.1);
     background-color: green;
     border-radius: 100%;
   }
@@ -127,13 +138,10 @@ export default {
     background-color: lightblue;
   }
   100% {
-    transform: scale(1.0);
+    transform: scale(1);
     background-color: blue;
   }
-  
 }
-
-
 
 .path {
   background-color: purple;
