@@ -24,16 +24,7 @@
         />
       </v-col>
 
-      <v-col class="d-flex" cols="6" sm="6">
-        <v-select
-          :items="Algorithms"
-          filled
-          label="Searching Algorithm"
-          dense
-          solo
-          v-model="currentAlgorithm"
-        ></v-select>
-      </v-col>
+      <select-current-algorithm />
     </v-row>
     <div class="my-2">
       <v-btn
@@ -41,7 +32,13 @@
         @click="runAlgorithm(currentAlgorithm)"
         :disabled="selectionState != 'ready' || isAlgorithmRunning"
         color="primary"
-      >Visualize</v-btn>
+      >
+        <v-icon>mdi-play</v-icon>Visualize
+      </v-btn>
+      <v-btn v-if="!isAlgorithmRunning" class="glowButton" @click="setIsAlgorithmRunning(true)" color="primary"> <v-icon>mdi-play</v-icon>Play</v-btn>
+      <v-btn v-else class="glowButton" @click="setIsAlgorithmRunning(false)" color="primary">
+        <v-icon>mdi-pause</v-icon>Pause
+      </v-btn>
       <v-btn
         @click="resetGrid"
         :disabled="!isAlgorithmRunning && !isAlgorithmFinished"
@@ -52,23 +49,9 @@
     <div class="subtitle">
       <p>Current Position: (x: {{ currX }}, y: {{ currY }})</p>
       <p>{{ selectionStateLabels[selectionState] }}</p>
-      <!--<p>
-        Walls:
-        {{
-          Object.keys(graph).filter((coors) => graph[coors].color == "orange")
-            .length
-        }}
-      </p>-->
     </div>
 
-    <v-slider
-      v-model="vizSpeedIndex"
-      :tick-labels="vizSpeedOptions"
-      :max="5"
-      step="1"
-      ticks="always"
-      tick-size="4"
-    ></v-slider>
+    <viz-speed-slider></viz-speed-slider>
 
     <div
       :key="`${rowCount}x${columnCount}`"
@@ -84,53 +67,53 @@
             :x="j - 1"
             :y="i - 1"
             :gridData="gridData"
-            :gridNode="getGridNodeForCell(j - 1, i - 1)"
             @onGridCellClicked="onGridCellClicked"
+            @onGridCellHover="onGridCellHover"
           />
         </div>
       </div>
-      <!-- <v-icon v-drag dark>mdi-flag</v-icon> -->
     </div>
   </v-container>
 </template>
 
 <script>
 //import graph from '../search-algorithms/bfs/test-bfs'
-import GridNode from "../search-algorithms/bfs/GridNode";
 import Queue from "../search-algorithms/utils/Queue";
+import PriorityQueue from "../search-algorithms/utils/PriorityQueue";
 import Stack from "../search-algorithms/utils/Stack";
+import VizSpeedSlider from "../components/VizSpeedSlider";
+import SelectCurrentAlgorithm from "../components/SelectCurrentAlgorithm";
 import {
   EMPTY,
   VISITED,
   EXPLORED,
   WALL,
-  PATH
+  PATH,
+  GRID_MAX_X,
+  GRID_MAX_Y
 } from "../search-algorithms/utils/constants.js";
 
 // Import one of available themes
 // @ is an alias to /src
-
-const GRID_MAX_Y = 23;
-const GRID_MAX_X = 70;
 
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 import GridCell from "@/components/GridCell.vue";
-import { mapState, mapMutations } from "vuex";
+import { mapState, mapMutations, mapActions } from "vuex";
 
 export default {
   name: "Home",
   components: {
-    GridCell
+    GridCell,
+    VizSpeedSlider,
+    SelectCurrentAlgorithm
   },
   data() {
     return {
       drawer: true,
-      Algorithms: ["BFS", "DFS", "A* Search"],
-      vizSpeedIndex: 2,
-      vizSpeedOptions: [0.25, 0.5, 1, 1.5, 2, 3],
+      Algorithms: ["BFS", "DFS", "A* Search", "Best-First-Search"],
       startX: null,
       startY: null,
       destX: null,
@@ -145,13 +128,12 @@ export default {
         "pick-dest": "Pick the destination node!",
         ready: "You're ready to visualize!"
       },
-      graph: {},
       rowCount: GRID_MAX_Y,
       columnCount: GRID_MAX_X,
       path: [],
       delayFactor: 200,
       wallCoordinates: new Set(),
-      currentAlgorithm: "BFS"
+      wallCreationState: false
     };
   },
 
@@ -163,11 +145,11 @@ export default {
     ...mapState({
       isAlgorithmFinished: "isAlgorithmFinished",
       isAlgorithmRunning: "isAlgorithmRunning",
-      selectionState: "selectionState"
+      selectionState: "selectionState",
+      vizSpeed: "vizSpeed",
+      graph: "graph",
+      currentAlgorithm: "currentAlgorithm"
     }),
-    vizSpeed() {
-      return this.vizSpeedOptions[this.vizSpeedIndex];
-    },
     gridData() {
       return {
         startX: this.startX,
@@ -179,15 +161,17 @@ export default {
     }
   },
   mounted() {
-    this.graph = this.createGraphFix(this.rowCount, this.columnCount);
-    
+    // this.graph = this.createGraph(this.rowCount, this.columnCount);
+    this.createGraph({ rows: this.rowCount, cols: this.columnCount });
   },
   methods: {
     ...mapMutations([
       "setIsAlgorithmFinished",
       "setIsAlgorithmRunning",
-      "setSelectionState"
+      "setSelectionState",
+      "setGraph"
     ]),
+    ...mapActions(["createGraph"]),
     resetGrid() {
       this.startX = null;
       this.startY = null;
@@ -195,177 +179,26 @@ export default {
       this.destY = null;
       this.currX = null;
       this.currY = null;
-      this.graph = this.createGraphFix(this.rowCount, this.columnCount);
+      this.createGraph({ rows: this.rowCount, cols: this.columnCount });
       this.wallCoordinates = new Set();
       this.path = [];
-      //this.selectionState = "pick-start";
       this.setSelectionState("pick-start");
       this.setIsAlgorithmFinished(false);
       this.setIsAlgorithmRunning(false);
+      //Need to make sure process stops running on reset %%%
     },
     addWall(wallCoordinate) {
       //Find coordiante by (x,y)
-      this.graph[wallCoordinate].color = "orange";
-    },
-
-    getGridNodeForCell(x, y) {
-      if (!this.graph[`(${x},${y})`]) {
-        //console.log(`(${x},${y})`);
-      }
-      return this.graph[`(${x},${y})`];
-    },
-    /*onVisitedColorChange(x, y) {
-      console.log(x);
-      console.log(y);
-    },*/
-    //Refer to fixed version below
-    /*addNeighbours(j, i, currNode, graph, rows, cols) {
-      var cell = "";
-      var adjNode;
-
-      cell = "(" + (j + 1) + "," + i + ")";
-      if (cell in graph) {
-        currNode.adj.push(graph[cell]);
-      } else {
-        adjNode = new GridNode(j + 1, i);
-        if (j < rows - 1) {
-         graph[cell] = adjNode;
-         currNode.adj.push(adjNode);
-        }
-      }
-
-      cell = "(" + j + "," + (i + 1) + ")";
-      if (cell in graph) {
-        currNode.adj.push(graph[cell]);
-      } else {
-        adjNode = new GridNode(j, i + 1);
-        if (i < cols - 1) {
-         graph[cell] = adjNode;
-          currNode.adj.push(adjNode);
-        }
-      }
-
-      cell = "(" + (j - 1) + "," + i + ")";
-      if (cell in graph) {
-        currNode.adj.push(graph[cell]);
-      } else {
-        adjNode = new GridNode(j - 1, i);
-        if (j > 0) {
-         graph[cell] = adjNode;
-          currNode.adj.push(adjNode);
-        }
-      }
-
-      cell = "(" + j + "," + (i - 1) + ")";
-      if (cell in graph) {
-        currNode.adj.push(graph[cell]);
-      } else {
-        adjNode = new GridNode(j + 1, i);
-        if (i > 0) {
-         graph[cell] = adjNode;
-          currNode.adj.push(adjNode);
-        }
-      }
-    },
-    /**
-     * Creates a model for the graph in the form of:
-     *
-     * {
-     *  (0,0): GridNode,
-     *  (0,1): GridNode,
-     *  (1,0): GridNode
-     * }
-     */
-    /*createGraph(rows, cols) {
-      var currNode = new GridNode(0, 0);
-      var cell = "";
-      var graph = {
-        "(0,0)": currNode
-      };
-      for (var j = 0; j < rows; j++) {
-        for (var i = 0; i < cols; i++) {
-          cell = `(${i},${j})`;
-          if (cell in graph) {
-            currNode = graph[cell];
-          } else {
-           currNode = new GridNode(i, j);
-           graph[cell] = currNode;
-          }
-          this.addNeighbours(i, j, currNode, graph, rows, cols);
-          //}
-        }
-      }
-      return graph;
-    },*/
-
-
-    addNeighboursFix(j, i, currNode, graph, rows, cols){
-      var adjNode;
-      var adjCell = `(${j+1},${i})`
-      if (j < rows - 1) {
-        adjNode = graph[adjCell];
-        if(adjNode != null){
-          currNode.adj.push(adjNode);
-        }
-      }
-
-      adjCell = `(${j},${i+1})`
-      if (i < cols - 1) {
-        adjNode = graph[adjCell];
-        if(adjNode != null){
-          currNode.adj.push(adjNode);
-        }
-      }
-
-      adjCell = `(${j-1},${i})`
-      if (j > 0) {
-        adjNode = graph[adjCell];
-        if(adjNode != null){
-          currNode.adj.push(adjNode);
-        }
-      }
-
-      adjCell = `(${j},${i-1})`     
-      if (i > 0) {
-        adjNode = graph[adjCell];
-        if(adjNode != null){
-          currNode.adj.push(adjNode);
-        }
-      }
-      //console.log(currNode.adj);
-      
-
-    },
-
-    createGraphFix(rows, cols){
-      var cell = "";
-      var graph = {};
-      for (let j = 0; j < rows; j++) {
-        for (let i = 0; i < cols; i++) {
-          cell = `(${i},${j})`;
-          let currNode = new GridNode(i, j);
-          graph[cell] = currNode;
-        }
-      }
-
-      for (let j = 0; j < rows; j++) {
-        for (let i = 0; i < cols; i++) {
-          cell = `(${i},${j})`;
-          let currNode = graph[cell];
-          this.addNeighboursFix(i, j, currNode, graph, rows, cols);
-        }
-      }
-      return graph;
-      
-      
+      this.graph[wallCoordinate].state = WALL;
     },
 
     onGridCellClicked(x, y) {
-      console.log(this.selectionState)
+      console.log(this.selectionState);
       switch (this.selectionState) {
         case "pick-start": {
           this.startX = x;
           this.startY = y;
+          console.log(`${this.startX},${this.startY}`);
           //this.selectionState = "pick-dest";
           this.setSelectionState("pick-dest");
           break;
@@ -378,10 +211,20 @@ export default {
         }
         case "ready": {
           // Add wall
-          this.addWall(`(${x},${y})`);
-
+          if (this.wallCreationState) {
+            this.wallCreationState = false;
+          } else {
+            this.wallCreationState = true;
+            this.addWall(`(${x},${y})`);
+          }
           break;
         }
+      }
+    },
+
+    onGridCellHover(x, y) {
+      if (this.wallCreationState) {
+        this.addWall(`(${x},${y})`);
       }
     },
 
@@ -389,14 +232,19 @@ export default {
       const startNode = this.graph[`(${this.startX},${this.startY})`];
       const endNode = this.graph[`(${this.destX},${this.destY})`];
       this.setIsAlgorithmRunning(true);
-      if (name == "BFS") {
-        this.path = await this.bfs(this.graph, startNode, endNode);
-      } else if (name == "DFS") {
-        this.path = await this.dfs(this.graph, startNode, endNode);
-      } else if(name == "A* Search"){
-        this.path = await this.A_Star(this.graph, startNode, endNode);
+      console.log("Running algorithm: " + name);
 
+      if (name == "search/breadth-first") {
+        this.path = await this.bfs(this.graph, startNode, endNode);
+      } else if (name == "search/depth-first") {
+        this.path = await this.dfs(this.graph, startNode, endNode);
+      } else if (name == "search/a-star") {
+        console.log("calling a star");
+        this.path = await this.aStar(this.graph, startNode, endNode);
+      } else if (name == "search/best-first") {
+        this.path = await this.best_first(this.graph, startNode, endNode);
       }
+
       for (let i = this.path.length - 1; i >= 0; i--) {
         this.path[i].state = PATH;
         await sleep(50);
@@ -411,11 +259,11 @@ export default {
 
     async dfs(graph, startNode, endNode) {
       // Perform DFS at start Node
-      var path = await this.dfsVisit(graph, startNode, startNode, endNode);
+      var path = await this.dfsVisit(startNode, startNode, endNode);
       return path;
     },
 
-    async dfsVisit(graph, currentNode, startNode, endNode) {
+    async dfsVisit(currentNode, startNode, endNode) {
       //Not a wall
       const stack = new Stack();
       stack.push(startNode);
@@ -426,14 +274,10 @@ export default {
           return this.drawPath(iterNode, startNode);
         }
         currentNode.state = VISITED;
-        await sleep(
-          this.delayFactor / this.vizSpeedOptions[this.vizSpeedIndex]
-        );
-        if(currentNode.x == 0 && currentNode.y == 22){
-          console.log(currentNode);
-        }
-        for (const neighbour of currentNode.adj) {
-          console.log(neighbour);
+        await sleep(this.delayFactor / this.vizSpeed);
+
+        for (const neighbourCoors of currentNode.adj) {
+          const neighbour = this.graph[neighbourCoors];
           if (neighbour.state != WALL) {
             if (neighbour.state == EMPTY) {
               stack.push(neighbour);
@@ -453,11 +297,14 @@ export default {
       const queue = new Queue();
       startNode.dist = 0;
       queue.enqueue(startNode);
+
       while (!queue.isEmpty()) {
+        console.log(this.isAlgorithmRunning)
+        // while (!this.isAlgorithmRunning) {
+        //   await sleep(100)
+        // }
         const currentNode = queue.dequeue();
-        await sleep(
-          this.delayFactor / this.vizSpeedOptions[this.vizSpeedIndex]
-        );
+        await sleep(this.delayFactor / this.vizSpeed);
         if (currentNode.state != WALL) {
           //visited.push(currentNode);
           currentNode.state = VISITED;
@@ -469,17 +316,17 @@ export default {
         }
 
         //View node's color should observe model node's color
-        console.log(currentNode.adj);
-        for (const neighbour of currentNode.adj) {
+        for (const neighbourCoors of currentNode.adj) {
+          const neighbour = this.graph[neighbourCoors];
           //Only interact with non-wall nodes
-          console.log(neighbour);
           if (neighbour.state != WALL) {
             //Visit
             if (neighbour.parent == null) {
               neighbour.parent = currentNode;
             }
             if (neighbour.state == EMPTY) {
-              neighbour.state = VISITED;
+              currentNode.state = VISITED;
+              await sleep(this.delayFactor / this.vizSpeed);
               neighbour.dist = currentNode.dist + 1;
               queue.enqueue(neighbour);
             }
@@ -490,89 +337,105 @@ export default {
       }
     },
 
-    async A_Star(startNode, endNode){
-      var openList = [];
-      var closedList = [];
-      openList.push(startNode);
-      var q;
+    async aStar(graph, startNode, endNode) {
+      console.log(graph);
+      const nodesToExplore = [];
+      var exploredNodes = [];
+      var currentNodeIndex;
+      var currentNode;
+      var higherPriorityChildExists;
+      var childExplored;
 
-      while(openList.length != 0){
-        q = this.findMinNode(openList);
-        closedList.push(openList.pop(q));
-        if(q.x == endNode.x && q.y == endNode.y){
-          return this.drawPath(q, startNode);
-
-        } 
-        for(let neighbour in q.adj){
-          if(neighbour.parent == null){
-            neighbour.parent = q;
-
-          }  
+      while (nodesToExplore.length != 0) {
+        // Remove element with least f-value
+        currentNodeIndex = this.findMinNodeIndex(nodesToExplore);
+        currentNode = nodesToExplore[currentNodeIndex];
+        exploredNodes.push(currentNode);
+        nodesToExplore.splice(currentNodeIndex);
+        currentNode.state = VISITED;
+        await sleep(this.delayFactor / this.vizSpeed);
+        //Check if we're done
+        if (currentNode.x == endNode.x && currentNode.y == endNode.y) {
+          return this.drawPath(currentNode, startNode);
         }
 
-        for(let neighbour in q.adj){
-          if(closedList.includes(neighbour)){
-            neighbour.g = q.g + 1;
-            neighbour.h = ((neighbour.x - endNode.x) ** 2) + ((neighbour.y - endNode.y) ** 2)
-            neighbour.f = neighbour.g + neighbour.h
+        for (let neighbourCoors of currentNode.adj) {
+          const neighbour = this.graph[neighbourCoors];
 
-
-
+          if (neighbour.state == WALL) {
+            console.log("wall");
+            continue;
+          }
+          if (neighbour.parent == null) {
+            neighbour.parent = currentNode;
           }
 
-          for(let open_node in openList){
-            if(open_node.x == neighbour.x && open_node.y == neighbour.y){
-              if(neighbour.g > open_node.g){
-                openList.push(open_node);
-                open_node.state = VISITED;
+          higherPriorityChildExists = false;
+          childExplored = false;
 
-              }
+          neighbour.distanceFromStart = currentNode.distanceFromStart + 1;
+          neighbour.distanceToDest =
+            Math.abs(neighbour.x - endNode.x) +
+            Math.abs(neighbour.y - endNode.y);
+          neighbour.nodeCost =
+            neighbour.distanceFromStart + neighbour.distanceToDest;
 
-
+          for (let closedChild of exploredNodes) {
+            if (closedChild.x == neighbour.x && closedChild.y == neighbour.y) {
+              childExplored = true;
             }
-
-
           }
-
+          for (let openChild of nodesToExplore) {
+            if (openChild.x == neighbour.x && openChild.y == neighbour.y) {
+              if (neighbour.distanceFromStart > openChild.g) {
+                higherPriorityChildExists = true;
+              }
+            }
+          }
+          if (!higherPriorityChildExists && !childExplored) {
+            neighbour.state = VISITED;
+            nodesToExplore.push(neighbour);
+          }
         }
-
-        
-
-
+        currentNode.state = EXPLORED;
       }
-
     },
 
-    /*generateSuccessors(q){
-      var successorsList = [];
-      var tempList = [];
-      for(let neighbour in q.adj){
-        successorsList.push(neighbour);
-
-      }
-      for(let neighbour in q.adj){
-        tempList = this.generateSuccessors(neighbour);
-        successorsList = successorsList.concat(tempList);
-
-      }
-      return successorsList;
-
-      
-      
-    },*/
-
-    findMinNode(lst){
-      var minValue = Infinity;
-      var choiceNode;
-      for(var node in lst){
-        if(node.f < minValue){
-          minValue = node.f;
-          choiceNode = node;
+    async best_first(graph, startNode, endNode) {
+      var pQueue = new PriorityQueue();
+      pQueue.enqueue(startNode);
+      while (!pQueue.isEmpty()) {
+        var min = pQueue.dequeue().element;
+        if (min.x == endNode.x && min.y == endNode.y) {
+          return this.drawPath(min, startNode);
+        } else {
+          for (var neighbourCoors of min.adj) {
+            const neighbour = this.graph[neighbourCoors];
+            if (neighbour.parent == null) {
+              neighbour.parent = min;
+            }
+            if (neighbour.state == EMPTY) {
+              neighbour.state = VISITED;
+              await sleep(this.delayFactor / this.vizSpeed);
+              pQueue.enqueue(neighbour);
+            }
+          }
+          min.state = EXPLORED;
         }
-
       }
-      return choiceNode;
-
+    },
+    findMinNodeIndex(lst) {
+      var minValue = Infinity;
+      var count = 0;
+      var index = 0;
+      for (var node of lst) {
+        if (node.nodeCost < minValue) {
+          minValue = node.f;
+          index = count;
+        }
+        count += 1;
+      }
+      return index;
     },
 
     drawPath(iterNode, startNode) {
@@ -580,11 +443,8 @@ export default {
       var path = [];
       while (!(iterNode.x == startNode.x && iterNode.y == startNode.y)) {
         path.push(iterNode);
-        console.log(iterNode);
-        console.log(iterNode.parent);
         iterNode = iterNode.parent;
       }
-      console.log(path);
       return path;
     }
   }
