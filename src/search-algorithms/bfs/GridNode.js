@@ -8,9 +8,9 @@ export default class GridNode {
     this.adj = [];
     this.parent = null;
     this.state = EMPTY;
-    this.f = 0;
-    this.g = 0;
-    this.h = 0;
+    this.nodeCost = 0;
+    this.distanceFromStart = 0;
+    this.distanceToDest = 0;
 
   }
 }
