@@ -1,6 +1,7 @@
 <template>
   <div
     @click="$emit('onGridCellClicked', x, y)"
+    @mouseover="$emit('onGridCellHover', x, y)"
     class="grid-cell"
     :class="{
       visited: isVisited && !isStart && !isDest,
@@ -55,10 +56,7 @@ export default {
     },
 
     isVisited() {
-      //console.log(this.gridNode)
-      if (!this.gridNode) {
-        console.log(`(${this.x},${this.y})`);
-      }
+      
       return this.gridNode.state === VISITED;
     },
 
@@ -149,5 +147,6 @@ export default {
 
 .wall {
   background-color: orange;
+  border-width: 0px;
 }
 </style>

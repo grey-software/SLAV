@@ -32,7 +32,13 @@
         @click="runAlgorithm(currentAlgorithm)"
         :disabled="selectionState != 'ready' || isAlgorithmRunning"
         color="primary"
-      >Visualize</v-btn>
+      >
+        <v-icon>mdi-play</v-icon>Visualize
+      </v-btn>
+      <v-btn v-if="!isAlgorithmRunning" class="glowButton" @click="setIsAlgorithmRunning(true)" color="primary"> <v-icon>mdi-play</v-icon>Play</v-btn>
+      <v-btn v-else class="glowButton" @click="setIsAlgorithmRunning(false)" color="primary">
+        <v-icon>mdi-pause</v-icon>Pause
+      </v-btn>
       <v-btn
         @click="resetGrid"
         :disabled="!isAlgorithmRunning && !isAlgorithmFinished"
@@ -62,6 +68,7 @@
             :y="i - 1"
             :gridData="gridData"
             @onGridCellClicked="onGridCellClicked"
+            @onGridCellHover="onGridCellHover"
           />
         </div>
       </div>
@@ -125,7 +132,8 @@ export default {
       columnCount: GRID_MAX_X,
       path: [],
       delayFactor: 200,
-      wallCoordinates: new Set()
+      wallCoordinates: new Set(),
+      wallCreationState: false
     };
   },
 
@@ -174,10 +182,10 @@ export default {
       this.createGraph({ rows: this.rowCount, cols: this.columnCount });
       this.wallCoordinates = new Set();
       this.path = [];
-      //this.selectionState = "pick-start";
       this.setSelectionState("pick-start");
       this.setIsAlgorithmFinished(false);
       this.setIsAlgorithmRunning(false);
+      //Need to make sure process stops running on reset %%%
     },
     addWall(wallCoordinate) {
       //Find coordiante by (x,y)
@@ -203,9 +211,20 @@ export default {
         }
         case "ready": {
           // Add wall
-          this.addWall(`(${x},${y})`);
+          if (this.wallCreationState) {
+            this.wallCreationState = false;
+          } else {
+            this.wallCreationState = true;
+            this.addWall(`(${x},${y})`);
+          }
           break;
         }
+      }
+    },
+
+    onGridCellHover(x, y) {
+      if (this.wallCreationState) {
+        this.addWall(`(${x},${y})`);
       }
     },
 
@@ -213,7 +232,7 @@ export default {
       const startNode = this.graph[`(${this.startX},${this.startY})`];
       const endNode = this.graph[`(${this.destX},${this.destY})`];
       this.setIsAlgorithmRunning(true);
-      console.log(name);
+      console.log("Running algorithm: " + name);
 
       if (name == "search/breadth-first") {
         this.path = await this.bfs(this.graph, startNode, endNode);
@@ -278,7 +297,12 @@ export default {
       const queue = new Queue();
       startNode.dist = 0;
       queue.enqueue(startNode);
+
       while (!queue.isEmpty()) {
+        console.log(this.isAlgorithmRunning)
+        // while (!this.isAlgorithmRunning) {
+        //   await sleep(100)
+        // }
         const currentNode = queue.dequeue();
         await sleep(this.delayFactor / this.vizSpeed);
         if (currentNode.state != WALL) {
@@ -301,7 +325,8 @@ export default {
               neighbour.parent = currentNode;
             }
             if (neighbour.state == EMPTY) {
-              neighbour.state = VISITED;
+              currentNode.state = VISITED;
+              await sleep(this.delayFactor / this.vizSpeed);
               neighbour.dist = currentNode.dist + 1;
               queue.enqueue(neighbour);
             }
@@ -317,9 +342,6 @@ export default {
       const nodesToExplore = [];
       var exploredNodes = [];
       var currentNodeIndex;
-
-      nodesToExplore.push(startNode);
-
       var currentNode;
       var higherPriorityChildExists;
       var childExplored;
@@ -351,11 +373,12 @@ export default {
           higherPriorityChildExists = false;
           childExplored = false;
 
-          neighbour.g = currentNode.g + 1;
-          neighbour.h =
+          neighbour.distanceFromStart = currentNode.distanceFromStart + 1;
+          neighbour.distanceToDest =
             Math.abs(neighbour.x - endNode.x) +
             Math.abs(neighbour.y - endNode.y);
-          neighbour.f = neighbour.g + neighbour.h;
+          neighbour.nodeCost =
+            neighbour.distanceFromStart + neighbour.distanceToDest;
 
           for (let closedChild of exploredNodes) {
             if (closedChild.x == neighbour.x && closedChild.y == neighbour.y) {
@@ -364,7 +387,7 @@ export default {
           }
           for (let openChild of nodesToExplore) {
             if (openChild.x == neighbour.x && openChild.y == neighbour.y) {
-              if (neighbour.g > openChild.g) {
+              if (neighbour.distanceFromStart > openChild.g) {
                 higherPriorityChildExists = true;
               }
             }
@@ -406,7 +429,7 @@ export default {
       var count = 0;
       var index = 0;
       for (var node of lst) {
-        if (node.f < minValue) {
+        if (node.nodeCost < minValue) {
           minValue = node.f;
           index = count;
         }

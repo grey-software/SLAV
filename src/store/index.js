@@ -6,8 +6,8 @@ import GridNode from "../search-algorithms/bfs/GridNode";
 Vue.use(Vuex);
 
 const generateGraph = (rows, cols) => {
-  var cell = "";
-  var graph = {};
+  var cell;
+  const graph = {};
   for (let j = 0; j < rows; j++) {
     for (let i = 0; i < cols; i++) {
       cell = `(${i},${j})`;
@@ -26,37 +26,37 @@ const generateGraph = (rows, cols) => {
   return graph;
 };
 
-const addNeighbours = (j, i, currNode, graph, rows, cols) => {
+const addNeighbours = (row, col, currNode, graph, rows, cols) => {
   var adjNode;
-  var adjCell = `(${j + 1},${i})`;
-  if (j < cols - 1) {
-    adjNode = graph[adjCell];
+  var neighbourCoors = `(${row + 1},${col})`;
+  if (row < cols - 1) {
+    adjNode = graph[neighbourCoors];
     if (adjNode != null) {
-      currNode.adj.push(adjCell);
+      currNode.adj.push(neighbourCoors);
     }
   }
 
-  adjCell = `(${j},${i + 1})`;
-  if (i < rows - 1) {
-    adjNode = graph[adjCell];
+  neighbourCoors = `(${row},${col + 1})`;
+  if (col < rows - 1) {
+    adjNode = graph[neighbourCoors];
     if (adjNode != null) {
-      currNode.adj.push(adjCell);
+      currNode.adj.push(neighbourCoors);
     }
   }
 
-  adjCell = `(${j - 1},${i})`;
-  if (j > 0) {
-    adjNode = graph[adjCell];
+  neighbourCoors = `(${row - 1},${col})`;
+  if (row > 0) {
+    adjNode = graph[neighbourCoors];
     if (adjNode != null) {
-      currNode.adj.push(adjCell);
+      currNode.adj.push(neighbourCoors);
     }
   }
 
-  adjCell = `(${j},${i - 1})`;
-  if (i > 0) {
-    adjNode = graph[adjCell];
+  neighbourCoors = `(${row},${col - 1})`;
+  if (col > 0) {
+    adjNode = graph[neighbourCoors];
     if (adjNode != null) {
-      currNode.adj.push(adjCell);
+      currNode.adj.push(neighbourCoors);
     }
   }
   //console.log(currNode.adj);
