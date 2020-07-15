@@ -16,7 +16,7 @@ export default {
   data() {
     return {
       vizSpeedIndex: 2,
-      vizSpeedOptions: [0.25, 0.5, 1, 1.5, 2, 3]
+      vizSpeedOptions: [0.25, 0.5, 1, 1.5, 2, 9]
     };
   },
   computed: {

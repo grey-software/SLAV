@@ -36,6 +36,7 @@ export default {
     gridData: {
       type: Object
     },
+    
     color: {
       type: String,
       default: "white"
@@ -56,18 +57,29 @@ export default {
     },
 
     isVisited() {
-      
-      return this.gridNode.state === VISITED;
+      if(this.gridNode != null){
+        return this.gridNode.state === VISITED;
+      }
+      return null;
     },
 
     isFinished() {
-      return this.gridNode.state === EXPLORED;
+      if(this.gridNode != null){
+        return this.gridNode.state === EXPLORED;
+      }
+      return null;
     },
     isPartOfPath() {
-      return this.gridNode.state === PATH;
+      if(this.gridNode != null){
+        return this.gridNode.state === PATH;
+      }
+      return null;
     },
     isWall() {
-      return this.gridNode.state === WALL;
+      if(this.gridNode != null){
+        return this.gridNode.state === WALL;
+      }
+      return null;
     }
   }
 };
@@ -79,6 +91,15 @@ export default {
   width: 16px;
   border: solid 0.2px;
   border-color: white;
+}
+
+.queue-cell{
+  height: 40px;
+  width: 40px;
+  border: solid 0.2px;
+  border-color: white;
+
+
 }
 
 .start {
