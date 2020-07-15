@@ -67,16 +67,7 @@
         </div>
     </div>
 
-    <div>
-      <grid-cell   
-              :x="1000"
-              :y="1000"
-              :gridData="gridData"         
-      />
     
-    
-    
-    </div>
 
 
 
