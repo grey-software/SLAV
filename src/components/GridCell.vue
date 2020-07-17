@@ -20,7 +20,7 @@ import {
   EXPLORED,
   WALL,
   PATH
-} from "../search-algorithms/utils/constants.js";
+  } from "../search-algorithms/utils/constants.js";
 import { mapState } from "vuex";
 
 export default {
@@ -80,6 +80,15 @@ export default {
         return this.gridNode.state === WALL;
       }
       return null;
+    },
+
+    isInQueue(){
+      if(this.gridNode != null){
+        return this.gridNode.queueState === true;
+
+      }
+      return null;
+
     }
   }
 };
@@ -93,11 +102,11 @@ export default {
   border-color: white;
 }
 
-.queue-cell{
-  height: 40px;
-  width: 40px;
+.queue_cell{
+  height: 16px;
+  width: 16px;
   border: solid 0.2px;
-  border-color: white;
+  border-color: greenyellow;
 
 
 }

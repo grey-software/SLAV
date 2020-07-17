@@ -1,7 +1,7 @@
 <template>
   <v-container class="home p-4">
     <v-toolbar 
-    app clipped-left
+    app 
     color="black"
     dark
     width=100%
@@ -57,26 +57,19 @@
 
     <viz-speed-slider></viz-speed-slider>
     
-    <div>
-        <div v-for="i in 5" :key="i" class="flex" float: left>
-            <grid-cell   
-              :x="100"
-              :y="100"
-              :gridData="gridData"         
-            />
+    <div class="ml-5 mt-5">
+        <div v-for="j in 1" :key="j" class="flex">    
+          <div v-for="i in 37" :key="i">
+              <queue-cell   
+                :queueIndex=i
+                :gridData="gridData"         
+              />
+
+              
+          </div>
         </div>
     </div>
 
-    <div>
-      <grid-cell   
-              :x="1000"
-              :y="1000"
-              :gridData="gridData"         
-      />
-    
-    
-    
-    </div>
 
 
 
@@ -116,7 +109,7 @@ import {
   PATH,
   GRID_MAX_X,
   GRID_MAX_Y
-} from "../search-algorithms/utils/constants.js";
+  } from "../search-algorithms/utils/constants.js";
 // Import one of available themes
 // @ is an alias to /src
 function sleep(ms) {
@@ -126,6 +119,7 @@ function sleep(ms) {
 import { mapGetters } from "vuex";
 
 import GridCell from "@/components/GridCell.vue";
+import QueueCell from "@/components/QueueCell.vue";
 //import QueueLog from "@/components/QueueLog.vue";
 import { mapState, mapMutations, mapActions } from "vuex";
 export default {
@@ -134,11 +128,12 @@ export default {
     GridCell,
     VizSpeedSlider,
     SelectCurrentAlgorithm,
+    QueueCell
     //QueueLog
   },
   data() {
     return {
-      currentAlgorithmStruct: null,
+      currentAlgorithmStruct: new Queue(),
       drawer: true,
       Algorithms: ["BFS", "DFS", "A* Search", "Best-First-Search"],
       startX: null,
@@ -160,7 +155,8 @@ export default {
       path: [],
       delayFactor: 200,
       wallCoordinates: new Set(),
-      wallCreationState: false
+      wallCreationState: false,
+      queueNodes: {}
     };
   },
   created() {
@@ -181,7 +177,8 @@ export default {
         startY: this.startY,
         destX: this.destX,
         destY: this.destY,
-        wallCoordinates: this.wallCoordinates
+        wallCoordinates: this.wallCoordinates,
+        currentAlgorithmStruct: this.currentAlgorithmStruct
       };
     }
   },
@@ -211,6 +208,7 @@ export default {
       this.path = [];
       //this.selectionState = "pick-start";
       this.setSelectionState("pick-start");
+      this.currentAlgorithmStruct = new Queue();
     },
     addWall(wallCoordinate) {
       this.graph[wallCoordinate].state = WALL;
@@ -315,13 +313,16 @@ export default {
       }
     },
     async bfs(graph, startNode, endNode) {
-      //const visited = [];
-      const queue = new Queue();
+      //const queue = new Queue();
       startNode.dist = 0;
-      queue.enqueue(startNode);
-      while (!queue.isEmpty() && this.isAlgorithmRunning) {
-        console.log(`Length${queue.length()}`);
-        const currentNode = queue.dequeue();
+      this.currentAlgorithmStruct.enqueue(startNode);
+      startNode.queueState = true;
+      //this.queueNodes[`${startNode.x},${startNode.y}`] = startNode;
+      while (!this.currentAlgorithmStruct.isEmpty() && this.isAlgorithmRunning) {
+        //console.log(`Length${queue.length()}`);
+        const currentNode = this.currentAlgorithmStruct.dequeue();
+        currentNode.queueState = false;
+        //this.queueNodes[`${currentNode.x},${currentNode.y}`] = "";
         await sleep(this.delayFactor / this.vizSpeed);
         if (currentNode.state != WALL) {
           //visited.push(currentNode);
@@ -347,7 +348,9 @@ export default {
                 neighbour.state = VISITED;
               }
               neighbour.dist = currentNode.dist + 1;
-              queue.enqueue(neighbour);
+              this.currentAlgorithmStruct.enqueue(neighbour);
+              neighbour.queueState = true;
+              //this.queueNodes[`${neighbour.x},${neighbour.y}`] = neighbour;
             }
           }
         }
@@ -355,6 +358,91 @@ export default {
         currentNode.state = EXPLORED;
       }
     },
+
+    async aStar(graph, startNode, endNode) {
+      const nodesToExplore = [];
+      var exploredNodes = [];
+      var currentNodeIndex;
+      nodesToExplore.push(startNode);
+      var currentNode;
+      var higherPriorityChildExists;
+      var childExplored;
+      while (nodesToExplore.length != 0 && this.isAlgorithmRunning) {
+        // Remove element with least f-value
+        currentNodeIndex = this.findMinNodeIndex(nodesToExplore);
+        currentNode = nodesToExplore[currentNodeIndex];
+        exploredNodes.push(currentNode);
+        nodesToExplore.splice(currentNodeIndex);
+        if (this.isAlgorithmRunning) {
+          currentNode.state = VISITED;
+        }
+        await sleep(this.delayFactor / this.vizSpeed);
+        //Check if we're done
+        if (currentNode.x == endNode.x && currentNode.y == endNode.y) {
+          return this.getPath(currentNode, startNode);
+        }
+        for (let neighbourCoors of currentNode.adj) {
+          const neighbour = this.graph[neighbourCoors];
+          if (neighbour.state == WALL) {
+            continue;
+          }
+          if (neighbour.parent == null) {
+            neighbour.parent = currentNode;
+          }
+          higherPriorityChildExists = false;
+          childExplored = false;
+          neighbour.distanceFromStart = currentNode.distanceFromStart + 1;
+          neighbour.distanceToDest =
+            Math.abs(neighbour.x - endNode.x) +
+            Math.abs(neighbour.y - endNode.y);
+          neighbour.nodeCost =
+            neighbour.distanceFromStart + neighbour.distanceToDest;
+          for (let closedChild of exploredNodes) {
+            if (closedChild.x == neighbour.x && closedChild.y == neighbour.y) {
+              childExplored = true;
+            }
+          }
+          for (let openChild of nodesToExplore) {
+            if (openChild.x == neighbour.x && openChild.y == neighbour.y) {
+              if (neighbour.distanceFromStart > openChild.distanceFromStart) {
+                higherPriorityChildExists = true;
+              }
+            }
+          }
+          if (!higherPriorityChildExists && !childExplored) {
+            if (this.isAlgorithmRunning) {
+              neighbour.state = VISITED;
+            }
+            nodesToExplore.push(neighbour);
+          }
+        }
+        currentNode.state = EXPLORED;
+      }
+    },  
+
+    findMinNodeIndex(lst) {
+      var minValue = Infinity;
+      var count = 0;
+      var index = 0;
+      for (var node of lst) {
+        if (node.f < minValue) {
+          minValue = node.f;
+          index = count;
+        }
+        count += 1;
+      }
+      return index;
+    },
+
+    drawPath(iterNode, startNode) {
+      //Iterate back up the parents until you find the null parent
+      var path = [];
+      while (!(iterNode.x == startNode.x && iterNode.y == startNode.y)) {
+        path.push(iterNode);
+        iterNode = iterNode.parent;
+      }
+      return path;
+    }
     
   }
 };

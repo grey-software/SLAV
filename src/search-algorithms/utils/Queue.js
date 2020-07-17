@@ -1,7 +1,6 @@
 module.exports = class Queue {
   //Linked list implementation is faster
   constructor() {
-    this.numElements = 0;
     this.items = [];
   }
 

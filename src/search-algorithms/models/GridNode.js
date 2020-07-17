@@ -8,6 +8,7 @@ export default class GridNode {
     this.adj = [];
     this.parent = null;
     this.state = EMPTY;
+    this.queueState = false;
     this.nodeCost = 0;
     this.distanceFromStart = 0;
     this.distanceToDest = 0;
