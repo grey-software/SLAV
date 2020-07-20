@@ -28,8 +28,6 @@ export default {
   computed: {
     ...mapState({ graph: "graph" }),
     gridNode() {
-      //return this.graph[`(${this.x},${this.y})`];
-      console.log(this.gridData.currentAlgorithmStruct);
       if(this.gridData.currentAlgorithmStruct != null){
         if(this.gridData.currentAlgorithmStruct.length() >= this.queueIndex - 1){
             return this.gridData.currentAlgorithmStruct.items[this.queueIndex];

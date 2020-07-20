@@ -1,5 +1,5 @@
 <template>
-  <v-col class="d-flex" cols="6" sm="6">
+  <v-col class="d-flex pt-8" cols="6" sm="6">
     <v-select
       :items="Algorithms"
       filled

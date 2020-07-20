@@ -1,40 +1,60 @@
-<template>
-  <v-container class="home p-4">
-    <v-toolbar 
-    app 
-    color="black"
-    dark
-    width=100%
-    >
-      <v-toolbar-title>SLAV</v-toolbar-title>
-          <v-col cols="2">
-          <v-text-field
-            label="Grid Rows"
-            :disabled="isAlgorithmRunning"
-            v-model.number="rowCount"
-            class="inputStyle"
-          />
+<template> 
+  <div>  
+  <v-toolbar 
+      app 
+      color="black"
+      dark
+      width=100%
+      >
+        <v-toolbar-title class="ml-12">SLAV</v-toolbar-title>
+        <v-row class="ml-12 align-center">
+            <v-btn
+              class="mr-2"
+              @click="runAlgorithm(currentAlgorithm)"
+              :disabled="selectionState != 'ready' || isAlgorithmRunning"
+              color="primary"
+            >
+            <v-icon>mdi-play</v-icon>Visualize
+            </v-btn>
+
+            <v-btn
+                @click="resetGrid"
+                :disabled="!isAlgorithmRunning && !isAlgorithmFinished"
+                color="red"
+              >Reset Grid
+            </v-btn>
+
+          <v-col cols="1">
+            <v-text-field
+              label="Grid Rows"
+              :disabled="isAlgorithmRunning"
+              v-model.number="rowCount"
+              class="inputStyle pt-5"
+            />
           </v-col>
 
-          <v-col cols="2">
-          <v-text-field
-            label="Grid Columns"
-            :disabled="isAlgorithmRunning"
-            v-model.number="columnCount"
-            class="inputStyle"
-          />
+          <v-col cols="1">
+            <v-text-field
+              label="Grid Columns"
+              :disabled="isAlgorithmRunning"
+              v-model.number="columnCount"
+              class="inputStyle pt-5"
+            />
           </v-col>
-          <v-col cols="6">
+          <v-col cols="4">
             <select-current-algorithm />
           </v-col>
-          
-          
+        </v-row>
+        
+        
+        
+      </v-toolbar> 
+    <v-container class="home p-4">
       
-    </v-toolbar>
 
     <!-- <div class="title">Grid Dimensions</div>-->
     
-    <div class="my-2">
+    <!--<div class="my-2">
       <v-btn
         class="glowButton"
         @click="runAlgorithm(currentAlgorithm)"
@@ -48,7 +68,7 @@
         :disabled="!isAlgorithmRunning && !isAlgorithmFinished"
         color="red"
       >Reset Grid</v-btn>
-    </div>
+    </div>-->
 
     <div class="subtitle">
       <p>Current Position: (x: {{ currX }}, y: {{ currY }})</p>
@@ -68,6 +88,47 @@
               
           </div>
         </div>
+    </div>
+
+
+    <div class="ml-5 mt-5">
+      <div class="flex">
+        <v-row justify="center" align="center">
+            <p>Unvisited</p>
+            <grid-cell
+              :gridData="gridData"
+              class="unvisited-cell"
+
+
+            />
+        
+            <p>Visited</p>
+            <grid-cell
+              :gridData="gridData"
+              class="visited-cell"
+
+
+            />
+            <p>Explored</p>
+            <grid-cell
+              :gridData="gridData"
+              class="explored-cell"
+
+
+            />
+
+            <p>Wall</p>
+            <grid-cell
+              :gridData="gridData"
+              class="wall-cell"
+
+
+            />
+
+        </v-row>
+
+        
+      </div>
     </div>
 
 
@@ -93,6 +154,7 @@
       </div>
     </div>
   </v-container>
+  </div>  
 </template>
 
 <script>
@@ -208,7 +270,7 @@ export default {
       this.path = [];
       //this.selectionState = "pick-start";
       this.setSelectionState("pick-start");
-      this.currentAlgorithmStruct = new Queue();
+      this.currentAlgorithmStruct = null;
     },
     addWall(wallCoordinate) {
       this.graph[wallCoordinate].state = WALL;
@@ -288,6 +350,7 @@ export default {
     async dfsVisit(currentNode, startNode, endNode) {
       //Not a wall
       const stack = new Stack();
+      this.currentAlgorithmStruct = stack;
       stack.push(startNode);
       while (!stack.isEmpty() && this.isAlgorithmRunning) {
         currentNode = stack.pop();
@@ -313,14 +376,15 @@ export default {
       }
     },
     async bfs(graph, startNode, endNode) {
-      //const queue = new Queue();
+      const queue = new Queue();
       startNode.dist = 0;
-      this.currentAlgorithmStruct.enqueue(startNode);
+      queue.enqueue(startNode);
+      this.currentAlgorithmStruct = queue;
       startNode.queueState = true;
       //this.queueNodes[`${startNode.x},${startNode.y}`] = startNode;
-      while (!this.currentAlgorithmStruct.isEmpty() && this.isAlgorithmRunning) {
+      while (!queue.isEmpty() && this.isAlgorithmRunning) {
         //console.log(`Length${queue.length()}`);
-        const currentNode = this.currentAlgorithmStruct.dequeue();
+        const currentNode = queue.dequeue();
         currentNode.queueState = false;
         //this.queueNodes[`${currentNode.x},${currentNode.y}`] = "";
         await sleep(this.delayFactor / this.vizSpeed);
@@ -348,7 +412,7 @@ export default {
                 neighbour.state = VISITED;
               }
               neighbour.dist = currentNode.dist + 1;
-              this.currentAlgorithmStruct.enqueue(neighbour);
+              queue.enqueue(neighbour);
               neighbour.queueState = true;
               //this.queueNodes[`${neighbour.x},${neighbour.y}`] = neighbour;
             }
@@ -449,6 +513,76 @@ export default {
 </script>
 
 <style>
+
+
+.info-cell{
+  margin-right: 170px;
+
+
+}
+
+.unvisited-cell{
+  margin-left: 20px;
+  margin-right: 170px;
+  background-color: black;
+
+
+}
+
+.visited-cell{
+  margin-left: 20px;
+  margin-right: 170px;
+  background-color: green;
+
+
+}
+
+.explored-cell{
+  margin-left: 20px;
+  margin-right: 170px;
+  background-color: blue;
+
+
+
+
+}
+
+.wall-cell{
+  margin-left: 20px;
+  margin-right: 170px;
+  background-color: orange;
+
+
+
+
+}
+
+.start-cell{
+  margin-right: 170px;
+  background-color: red;
+
+
+
+}
+
+.dest-cell{
+  margin-right: 170px;
+  background-color: yellow;
+
+
+
+}
+
+.start-cursor{
+  cursor: "start-cell";
+
+
+
+}
+
+
+
+
 @import url(https://fonts.googleapis.com/css?family=Roboto:900);
 .glowButton {
   position: relative;
