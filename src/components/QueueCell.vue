@@ -1,11 +1,11 @@
 <template>
   <div
-    class="grid_cell"
+    class="grid_cell pl-1"
     :class="{
       queue_cell: isInQueue,
       grid_cell: !isInQueue
     }">
-    <p class="queue_text">Osama</p>
+    <p class="queue_text">({{x}},{{y}})</p>
 </div>
 </template>
 
@@ -13,6 +13,7 @@
 
 import { mapState } from "vuex";
 export default {
+ 
   props: {
     queueIndex:{
         type: Number,
@@ -43,8 +44,34 @@ export default {
       }
       return null;
 
+    },
+
+    x(){
+      if(this.gridNode != null){
+        return this.gridNode.x;   
+
+      }
+      return 0;
+
+
+    },
+
+    y(){
+      if(this.gridNode != null){
+        return this.gridNode.y
+
+
+      }
+      return 0;
+
+
     }
+
+
+
   }
+
+  
 };
 </script>
 
