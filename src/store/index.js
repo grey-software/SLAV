@@ -14,6 +14,22 @@ import PriorityQueue from "../search-algorithms/utils/PriorityQueue";
 
 Vue.use(Vuex);
 
+/*
+
+What would a custom algorithm's config look like?
+
+graphComponent: {
+  type: Component
+  default: DefaultGraph
+},
+gridNodeModel: {
+  type: GridNode,
+  default: GridNode
+},
+- Add a constant to the GridCellState enum
+
+*/
+
 const sleep = (ms) => {
   return new Promise((resolve) => setTimeout(resolve, ms));
 };
@@ -85,6 +101,8 @@ const addNeighbours = (row, col, currNode, graph, rows, cols) => {
   //console.log(currNode.adj);
 };
 
+
+
 export default new Vuex.Store({
   state: {
     isAlgorithmRunning: false,
@@ -92,9 +110,15 @@ export default new Vuex.Store({
     selectionState: "pick-start",
     graph: {},
     vizSpeed: 1,
-    currentAlgorithm: "search/a-star",
+    currentAlgorithm: "search/breadth-first",
     path: [],
     delayFactor: 200,
+    startX: -1,
+    startY: -1,
+    destX: -1,
+    destY: -1,
+    rowCount: 23,
+    columnCount: 70
   },
   mutations: {
     setIsAlgorithmFinished(state, isAlgorithmFinished) {
@@ -120,8 +144,52 @@ export default new Vuex.Store({
     setPath(state, path) {
       state.path = path;
     },
+    setStartCoors(state, coors) {
+      state.startX = coors.x,
+        state.startY = coors.y
+    },
+    setDestCoors(state, coors) {
+      state.destX = coors.x;
+      state.destY = coors.y;
+    },
+    setCurrCoors(state, coors) {
+      state.currX = coors.x;
+      state.currY = coors.y;
+    },
+    resetWallCoordinates(state) {
+      state.wallCoordinates = new Set();
+    },
+    resetGrid(state) {
+      state.graph = {}
+      state.startX = -1
+      state.startY = -1;
+      state.destX = -1;
+      state.destY = -1;
+      state.currX = -1;
+      state.currY = -1;
+      state.isAlgorithmFinished = false;
+      state.isAlgorithmRunning = false;
+      state.wallCoordinates = new Set();
+      state.path = [];
+      state.selectionState = "pick-start"
+      state.currentAlgorithmStruct = null;
+    },
+    setGridNodeState(state, payload) {
+      console.log(`(${payload.x},${payload.y})`)
+      console.log(state.graph[`(${payload.x},${payload.y})`])
+      state.graph[`(${payload.x},${payload.y})`].state = payload.nodeState;
+    },
+    addWall(state, wallCoordinate) {
+      state.graph[wallCoordinate].state = WALL;
+    },
+
   },
   actions: {
+    reset(context) {
+
+      context.commit('resetGrid')
+      context.dispatch('createGraph', { rows: context.state.rowCount, cols: context.state.columnCount })
+    },
     createGraph(context, payload) {
       const graph = generateGraph(payload.rows, payload.cols);
       context.commit("setGraph", graph);
@@ -137,8 +205,7 @@ export default new Vuex.Store({
       context.commit("setIsAlgorithmRunning", true);
       console.log(`Running algorithm: ${algorithm}`);
       if (algorithm == "search/breadth-first") {
-        const bfsPath = [];
-        context.commit("setPath", bfsPath);
+        context.dispatch("bfs")
         // this.path = await this.bfs(this.graph, startNode, endNode);
       } else if (algorithm == "search/depth-first") {
         const dfsPath = [];
@@ -167,12 +234,13 @@ export default new Vuex.Store({
       const startNode =
         graph[`(${context.state.startX},${context.state.startY})`];
       const endNode = graph[`(${context.state.destX},${context.state.destY})`];
+      console.log(startNode, endNode)
       //const visited = [];
       const queue = new Queue();
       startNode.dist = 0;
       queue.enqueue(startNode);
       while (!queue.isEmpty() && context.state.isAlgorithmRunning) {
-        console.log(context.state.isAlgorithmRunning);
+        console.log("BFS Iteration");
         const currentNode = queue.dequeue();
         await sleep(context.state.delayFactor / context.state.vizSpeed);
         if (currentNode.state != WALL) {
@@ -183,7 +251,17 @@ export default new Vuex.Store({
         }
         var iterNode = currentNode;
         if (iterNode.x == endNode.x && iterNode.y == endNode.y) {
-          return getPath(iterNode, startNode);
+          const path = getPath(iterNode, startNode);
+          console.log(path)
+          context.commit("setPath", path);
+          for (let i = path.length - 1; i >= 0; i--) {
+            console.log(path[i].x, path[i].y)
+            context.commit('setGridNodeState', {
+              x: path[i].x, y: path[i].y, nodeState: PATH
+            })
+            await sleep(50);
+          }
+          return
         }
         //View node's color should observe model node's color
         for (const neighbourCoors of currentNode.adj) {
@@ -304,6 +382,17 @@ export default new Vuex.Store({
       }
       return index;
     },
+
+    drawPath(iterNode, startNode) {
+      //Iterate back up the parents until you find the null parent
+      var path = [];
+      while (!(iterNode.x == startNode.x && iterNode.y == startNode.y)) {
+        path.push(iterNode);
+        iterNode = iterNode.parent;
+      }
+      return path;
+    }
+
   },
 
   getters: {

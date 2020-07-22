@@ -1,164 +1,109 @@
-<template> 
-  <div>  
-  <v-toolbar 
-      app 
-      color="black"
-      dark
-      width=100%
-      >
-        <v-toolbar-title class="ml-12">SLAV</v-toolbar-title>
-        <v-row class="ml-12 align-center">
-            <v-btn
-              class="mr-2"
-              @click="runAlgorithm(currentAlgorithm)"
-              :disabled="selectionState != 'ready' || isAlgorithmRunning"
-              color="primary"
-            >
-            <v-icon>mdi-play</v-icon>Visualize
-            </v-btn>
+<template>
+  <div>
+    <v-toolbar app color="black" dark width="100%">
+      <v-toolbar-title class="ml-12">SLAV</v-toolbar-title>
+      <v-row class="ml-12 align-center">
+        <v-btn
+          class="mr-2"
+          @click="onVizClicked"
+          :disabled="selectionState != 'ready' || isAlgorithmRunning"
+          color="primary"
+        >
+          <v-icon>mdi-play</v-icon>Visualize
+        </v-btn>
 
-            <v-btn
-                @click="resetGrid"
-                :disabled="!isAlgorithmRunning && !isAlgorithmFinished"
-                color="red"
-              >Reset Grid
-            </v-btn>
+        <v-btn
+          @click="reset"
+          :disabled="!isAlgorithmRunning && !isAlgorithmFinished"
+          color="red"
+        >Reset Grid</v-btn>
 
-          <v-col cols="1">
-            <v-text-field
-              label="Grid Rows"
-              :disabled="isAlgorithmRunning"
-              v-model.number="rowCount"
-              class="inputStyle pt-5"
-            />
-          </v-col>
+        <v-col cols="1">
+          <v-text-field
+            label="Grid Rows"
+            :disabled="isAlgorithmRunning"
+            v-model.number="rowCount"
+            class="inputStyle pt-5"
+          />
+        </v-col>
 
-          <v-col cols="1">
-            <v-text-field
-              label="Grid Columns"
-              :disabled="isAlgorithmRunning"
-              v-model.number="columnCount"
-              class="inputStyle pt-5"
-            />
-          </v-col>
-          <v-col cols="4">
-            <select-current-algorithm />
-          </v-col>
-        </v-row>
-        
-        
-        
-      </v-toolbar> 
+        <v-col cols="1">
+          <v-text-field
+            label="Grid Columns"
+            :disabled="isAlgorithmRunning"
+            v-model.number="columnCount"
+            class="inputStyle pt-5"
+          />
+        </v-col>
+        <v-col cols="4">
+          <select-current-algorithm />
+        </v-col>
+      </v-row>
+    </v-toolbar>
     <v-container class="home p-4">
-      
 
-    <!-- <div class="title">Grid Dimensions</div>-->
-    
-    <!--<div class="my-2">
-      <v-btn
-        class="glowButton"
-        @click="runAlgorithm(currentAlgorithm)"
-        :disabled="selectionState != 'ready' || isAlgorithmRunning"
-        color="primary"
-      >
-        <v-icon>mdi-play</v-icon>Visualize
-      </v-btn>
-      <v-btn
-        @click="resetGrid"
-        :disabled="!isAlgorithmRunning && !isAlgorithmFinished"
-        color="red"
-      >Reset Grid</v-btn>
-    </div>-->
+      <div class="subtitle">
+        <p>{{ selectionStateLabels[selectionState] }}</p>
+      </div>
 
-    <div class="subtitle">
-      <p>Current Position: (x: {{ currX }}, y: {{ currY }})</p>
-      <p>{{ selectionStateLabels[selectionState] }}</p>
-    </div>
+      <viz-speed-slider></viz-speed-slider>
 
-    <viz-speed-slider></viz-speed-slider>
-    
-    <div class="ml-5 mt-5">
-        <div v-for="j in 1" :key="j" class="flex">    
+      <div class="ml-5 mt-5">
+        <div v-for="j in 1" :key="j" class="flex">
           <div v-for="i in 37" :key="i">
-              <queue-cell   
-                :queueIndex=i
-                :gridData="gridData"         
-              />
-
-              
+            <queue-cell :queueIndex="i" :gridData="gridData" />
           </div>
         </div>
-    </div>
+      </div>
 
-
-    <div class="ml-5 mt-5">
-      <div class="flex">
-        <v-row justify="center" align="center">
+      <div class="ml-5 mt-5">
+        <div class="flex">
+          <v-row justify="center" align="center">
             <p>Unvisited</p>
-            <grid-cell
-              :gridData="gridData"
-              class="unvisited-cell"
+            <grid-cell :gridData="gridData" class="unvisited-cell" />
 
-
-            />
-        
             <p>Visited</p>
-            <grid-cell
-              :gridData="gridData"
-              class="visited-cell"
-
-
-            />
+            <grid-cell :gridData="gridData" class="visited-cell" />
             <p>Explored</p>
-            <grid-cell
-              :gridData="gridData"
-              class="explored-cell"
-
-
-            />
+            <grid-cell :gridData="gridData" class="explored-cell" />
 
             <p>Wall</p>
-            <grid-cell
-              :gridData="gridData"
-              class="wall-cell"
-
-
-            />
-
-        </v-row>
-
-        
-      </div>
-    </div>
-
-
-
-
-    <div
-      :key="`${rowCount}x${columnCount}`"
-      v-if="Object.keys(graph).length > 0"
-      id="visualizer"
-      class="ml-5 mt-5"
-    >
-      <!-- Look for good svg graphics library to render graph -->
-      <div v-for="i in rowCount" :key="i" class="flex">
-        <div v-for="j in columnCount" :key="j">
-          <grid-cell
-            :x="j - 1"
-            :y="i - 1"
-            :gridData="gridData"
-            @onGridCellClicked="onGridCellClicked"
-            @onGridCellHover="onGridCellHover"
-          />
+            <grid-cell :gridData="gridData" class="wall-cell" />
+          </v-row>
         </div>
       </div>
-    </div>
-  </v-container>
-  </div>  
+
+      <!-- This is our default graph rendering function. It takes in a graph,and draws it
+while reactively responding to changes in state
+
+Other algorithms may want a custom renderer, so they'll write their own GraphRenderer component
+
+In our case, a custom renderer means a component that takes in a graph and draws it a certain way
+      -->
+      <div
+        :key="`${rowCount}x${columnCount}`"
+        v-if="Object.keys(graph).length > 0"
+        id="visualizer"
+        class="ml-5 mt-5"
+      >
+        <!-- Look for good svg graphics library to render graph -->
+        <div v-for="i in rowCount" :key="i" class="flex">
+          <div v-for="j in columnCount" :key="j">
+            <grid-cell
+              :x="j - 1"
+              :y="i - 1"
+              :gridData="gridData"
+              @onGridCellClicked="onGridCellClicked"
+              @onGridCellHover="onGridCellHover"
+            />
+          </div>
+        </div>
+      </div>
+    </v-container>
+  </div>
 </template>
 
 <script>
-//import graph from '../search-algorithms/bfs/test-bfs'
 import Queue from "../search-algorithms/utils/Queue";
 import Stack from "../search-algorithms/utils/Stack";
 import VizSpeedSlider from "../components/VizSpeedSlider";
@@ -168,12 +113,11 @@ import {
   VISITED,
   EXPLORED,
   WALL,
-  PATH,
+  //PATH,
   GRID_MAX_X,
   GRID_MAX_Y
-  } from "../search-algorithms/utils/constants.js";
-// Import one of available themes
-// @ is an alias to /src
+} from "../search-algorithms/utils/constants.js";
+
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
@@ -197,13 +141,6 @@ export default {
     return {
       currentAlgorithmStruct: new Queue(),
       drawer: true,
-      Algorithms: ["BFS", "DFS", "A* Search", "Best-First-Search"],
-      startX: null,
-      startY: null,
-      destX: null,
-      destY: null,
-      currX: 0,
-      currY: 0,
       gridMaxX: GRID_MAX_X,
       gridMaxY: GRID_MAX_Y,
       // selectionState: "pick-start",
@@ -214,7 +151,6 @@ export default {
       },
       rowCount: GRID_MAX_Y,
       columnCount: GRID_MAX_X,
-      path: [],
       delayFactor: 200,
       wallCoordinates: new Set(),
       wallCreationState: false,
@@ -231,7 +167,12 @@ export default {
       selectionState: "selectionState",
       vizSpeed: "vizSpeed",
       graph: "graph",
-      currentAlgorithm: "currentAlgorithm"
+      currentAlgorithm: "currentAlgorithm",
+      startX: "startX",
+      startY: "startY",
+      destX: "destX",
+      destY: "destY",
+      path: "path"
     }),
     gridData() {
       return {
@@ -253,25 +194,29 @@ export default {
       "setIsAlgorithmFinished",
       "setIsAlgorithmRunning",
       "setSelectionState",
-      "setGraph"
+      "setGraph",
+      "setStartCoors",
+      "setDestCoors",
+      "setCurrCoors",
+      "resetGrid",
+     
     ]),
-    ...mapActions(["createGraph"]),
-    resetGrid() {
-      this.startX = null;
-      this.startY = null;
-      this.destX = null;
-      this.destY = null;
-      this.currX = null;
-      this.currY = null;
-      this.setIsAlgorithmFinished(false);
-      this.setIsAlgorithmRunning(false);
-      this.createGraph({ rows: this.rowCount, cols: this.columnCount });
-      this.wallCoordinates = new Set();
-      this.path = [];
-      //this.selectionState = "pick-start";
-      this.setSelectionState("pick-start");
-      this.currentAlgorithmStruct = null;
-    },
+    ...mapActions([
+      "createGraph", 
+      "runAlgorithm", 
+      "onGridCellClicked", 
+      "onGridCellHover",
+      "dfs",
+      "dfsVisit",
+      "bfs",
+      "aStar",
+      "findMinNodeIndex",
+      "best_first",
+      "drawPath",
+      "reset"
+
+      
+      ]),
     addWall(wallCoordinate) {
       this.graph[wallCoordinate].state = WALL;
     },
@@ -279,15 +224,13 @@ export default {
       console.log(this.selectionState);
       switch (this.selectionState) {
         case "pick-start": {
-          this.startX = x;
-          this.startY = y;
+          this.setStartCoors({ x, y });
           console.log(`${this.startX},${this.startY}`);
           this.setSelectionState("pick-dest");
           break;
         }
         case "pick-dest": {
-          this.destX = x;
-          this.destY = y;
+          this.setDestCoors({ x, y });
           this.setSelectionState("ready");
           break;
         }
@@ -318,30 +261,31 @@ export default {
       }
     },
 
-    async runAlgorithm(algorithm) {
-      const startNode = this.graph[`(${this.startX},${this.startY})`];
-      const endNode = this.graph[`(${this.destX},${this.destY})`];
-      this.setIsAlgorithmRunning(true);
-      console.log(`Running algorithm: ${algorithm}`);
-      if (algorithm == "search/breadth-first") {
-        this.path = await this.bfs(this.graph, startNode, endNode);
-      } else if (algorithm == "search/depth-first") {
-        this.path = await this.dfs(this.graph, startNode, endNode);
-      } else if (algorithm == "search/a-star") {
-        console.log("calling a star");
-        this.path = await this.aStar(this.graph, startNode, endNode);
-      } else if (algorithm == "search/best-first") {
-        this.path = await this.best_first(this.graph, startNode, endNode);
-      }
-      for (let i = this.path.length - 1; i >= 0; i--) {
-        this.path[i].state = PATH;
-        await sleep(50);
-      }
-      this.setIsAlgorithmRunning(true);
-      this.setIsAlgorithmFinished(true);
-      // Convert to a mutation
-      this.setSelectionState("pick-start");
-    },
+    // async runAlgorithm(algorithm) {
+
+    //   const startNode = this.graph[`(${this.startX},${this.startY})`];
+    //   const endNode = this.graph[`(${this.destX},${this.destY})`];
+    //   this.setIsAlgorithmRunning(true);
+    //   console.log(`Running algorithm: ${algorithm}`);
+    //   if (algorithm == "search/breadth-first") {
+    //     this.path = await this.bfs(this.graph, startNode, endNode);
+    //   } else if (algorithm == "search/depth-first") {
+    //     this.path = await this.dfs(this.graph, startNode, endNode);
+    //   } else if (algorithm == "search/a-star") {
+    //     console.log("calling a star");
+    //     this.path = await this.aStar(this.graph, startNode, endNode);
+    //   } else if (algorithm == "search/best-first") {
+    //     this.path = await this.best_first(this.graph, startNode, endNode);
+    //   }
+    //   for (let i = this.path.length - 1; i >= 0; i--) {
+    //     this.path[i].state = PATH;
+    //     await sleep(50);
+    //   }
+    //   this.setIsAlgorithmRunning(true);
+    //   this.setIsAlgorithmFinished(true);
+    //   // Convert to a mutation
+    //   this.setSelectionState("pick-start");
+    // },
     async dfs(graph, startNode, endNode) {
       // Perform DFS at start Node
       var path = await this.dfsVisit(startNode, startNode, endNode);
@@ -374,6 +318,9 @@ export default {
         }
         currentNode.state = EXPLORED;
       }
+    },
+    onVizClicked() {
+      this.runAlgorithm({ algorithm: this.currentAlgorithm });
     },
     async bfs(graph, startNode, endNode) {
       const queue = new Queue();
@@ -443,7 +390,7 @@ export default {
         await sleep(this.delayFactor / this.vizSpeed);
         //Check if we're done
         if (currentNode.x == endNode.x && currentNode.y == endNode.y) {
-          return this.getPath(currentNode, startNode);
+          return this.drawPath(currentNode, startNode);
         }
         for (let neighbourCoors of currentNode.adj) {
           const neighbour = this.graph[neighbourCoors];
@@ -482,15 +429,15 @@ export default {
         }
         currentNode.state = EXPLORED;
       }
-    },  
+    },
 
     findMinNodeIndex(lst) {
       var minValue = Infinity;
       var count = 0;
       var index = 0;
       for (var node of lst) {
-        if (node.f < minValue) {
-          minValue = node.f;
+        if (node.nodeCost < minValue) {
+          minValue = node.nodeCost;
           index = count;
         }
         count += 1;
@@ -507,81 +454,52 @@ export default {
       }
       return path;
     }
-    
   }
 };
 </script>
 
 <style>
-
-
-.info-cell{
+.info-cell {
   margin-right: 170px;
-
-
 }
 
-.unvisited-cell{
+.unvisited-cell {
   margin-left: 20px;
   margin-right: 170px;
   background-color: black;
-
-
 }
 
-.visited-cell{
+.visited-cell {
   margin-left: 20px;
   margin-right: 170px;
   background-color: green;
-
-
 }
 
-.explored-cell{
+.explored-cell {
   margin-left: 20px;
   margin-right: 170px;
   background-color: blue;
-
-
-
-
 }
 
-.wall-cell{
+.wall-cell {
   margin-left: 20px;
   margin-right: 170px;
   background-color: orange;
-
-
-
-
 }
 
-.start-cell{
+.start-cell {
   margin-right: 170px;
   background-color: red;
-
-
-
 }
 
-.dest-cell{
+.dest-cell {
   margin-right: 170px;
   background-color: yellow;
-
-
-
 }
 
-.start-cursor{
+.start-cursor {
   cursor: "start-cell";
-
-
-
 }
-
-
-
 
 @import url(https://fonts.googleapis.com/css?family=Roboto:900);
 .glowButton {

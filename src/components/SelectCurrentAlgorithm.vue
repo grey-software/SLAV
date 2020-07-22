@@ -17,7 +17,7 @@ import { mapMutations } from "vuex";
 export default {
   data() {
     return {
-      currentAlgorithm: { text: "A* Search", value: "search/a-star" },
+      currentAlgorithm: { text: "Breadth First Search", value: "search/breadth-first" },
       Algorithms: [
         { text: "Breadth First Search", value: "search/breadth-first" },
         { text: "Depth First Search", value: "search/depth-first" },
