@@ -189,6 +189,12 @@ export default {
     this.createGraph({ rows: this.rowCount, cols: this.columnCount });
   },
   methods: {
+    ...mapState([
+      "currentAlgorithm"
+
+
+    ]),
+
     ...mapMutations([
       "setIsAlgorithmFinished",
       "setIsAlgorithmRunning",

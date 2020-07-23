@@ -110,7 +110,7 @@ export default new Vuex.Store({
     selectionState: "pick-start",
     graph: {},
     vizSpeed: 1,
-    currentAlgorithm: "search/breadth-first",
+    currentAlgorithm: "search/a-star",
     path: [],
     delayFactor: 200,
     startX: -1,
@@ -183,6 +183,10 @@ export default new Vuex.Store({
       state.graph[wallCoordinate].state = WALL;
     },
 
+    onVizClicked() {
+      this.runAlgorithm({ algorithm: this.currentAlgorithm });
+    },
+
   },
   actions: {
     reset(context) {
@@ -212,8 +216,9 @@ export default new Vuex.Store({
         context.commit("setPath", dfsPath);
         // this.path = await this.dfs(this.graph, startNode, endNode);
       } else if (algorithm == "search/a-star") {
-        const aStarPath = [];
-        context.commit("setPath", aStarPath);
+        context.dispatch("aStar");
+        //const aStarPath = [];
+        //context.commit("setPath", aStarPath);
         // this.path = await this.aStar(this.graph, startNode, endNode);
       } else if (algorithm == "search/best-first") {
         const bestFirstPath = [];
@@ -285,30 +290,44 @@ export default new Vuex.Store({
       }
     },
 
-    async aStar(graph, startNode, endNode) {
+    async aStar(context) {
       const nodesToExplore = [];
       var exploredNodes = [];
-      var currentNodeIndex;
+      //var currentNodeIndex;
+      const graph = context.state.graph;
+      const startNode =
+        graph[`(${context.state.startX},${context.state.startY})`];
+      const endNode = graph[`(${context.state.destX},${context.state.destY})`];
       nodesToExplore.push(startNode);
       var currentNode;
       var higherPriorityChildExists;
       var childExplored;
-      while (nodesToExplore.length != 0 && this.isAlgorithmRunning) {
+      while (nodesToExplore.length != 0 && context.state.isAlgorithmRunning) {
         // Remove element with least f-value
-        currentNodeIndex = this.findMinNodeIndex(nodesToExplore);
+        var minValue = Infinity;
+        var count = 0;
+        var currentNodeIndex = 0;
+        for (var node of nodesToExplore) {
+          if (node.nodeCost < minValue) {
+            minValue = node.nodeCost;
+            currentNodeIndex = count;
+          }
+          count += 1;
+        }
+        //currentNodeIndex = findMinNodeIndex(nodesToExplore);
         currentNode = nodesToExplore[currentNodeIndex];
         exploredNodes.push(currentNode);
         nodesToExplore.splice(currentNodeIndex);
-        if (this.isAlgorithmRunning) {
+        if (context.state.isAlgorithmRunning) {
           currentNode.state = VISITED;
         }
-        await sleep(this.delayFactor / this.vizSpeed);
+        await sleep(context.state.delayFactor / context.state.vizSpeed);
         //Check if we're done
         if (currentNode.x == endNode.x && currentNode.y == endNode.y) {
-          return this.getPath(currentNode, startNode);
+          return getPath(currentNode, startNode);
         }
         for (let neighbourCoors of currentNode.adj) {
-          const neighbour = this.graph[neighbourCoors];
+          const neighbour = graph[neighbourCoors];
           if (neighbour.state == WALL) {
             console.log("wall");
             continue;
@@ -337,7 +356,7 @@ export default new Vuex.Store({
             }
           }
           if (!higherPriorityChildExists && !childExplored) {
-            if (this.isAlgorithmRunning) {
+            if (context.state.isAlgorithmRunning) {
               neighbour.state = VISITED;
             }
             nodesToExplore.push(neighbour);
