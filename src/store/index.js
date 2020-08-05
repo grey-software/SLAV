@@ -123,10 +123,15 @@ export default new Vuex.Store({
   mutations: {
     setIsAlgorithmFinished(state, isAlgorithmFinished) {
       state.isAlgorithmFinished = isAlgorithmFinished;
+      if(isAlgorithmFinished){
+        state.selectionState = "Finished";
+
+      }
     },
 
     setIsAlgorithmRunning(state, boolValue) {
       state.isAlgorithmRunning = boolValue;
+    
     },
 
     setSelectionState(state, selectionState) {
@@ -174,9 +179,21 @@ export default new Vuex.Store({
       state.selectionState = "pick-start"
       state.currentAlgorithmStruct = null;
     },
+
+    limitedResetGrid(state){
+      state.graph = {}
+      state.currX = -1;
+      state.currY = -1;
+      state.isAlgorithmRunning = false;
+      state.path = [];
+      state.currentAlgorithmStruct = null;
+
+
+
+    },
     setGridNodeState(state, payload) {
-      console.log(`(${payload.x},${payload.y})`)
-      console.log(state.graph[`(${payload.x},${payload.y})`])
+      //console.log(`(${payload.x},${payload.y})`)
+      //console.log(state.graph[`(${payload.x},${payload.y})`])
       state.graph[`(${payload.x},${payload.y})`].state = payload.nodeState;
     },
     addWall(state, wallCoordinate) {
@@ -194,6 +211,13 @@ export default new Vuex.Store({
       context.commit('resetGrid')
       context.dispatch('createGraph', { rows: context.state.rowCount, cols: context.state.columnCount })
     },
+
+    limitedReset(context){
+      context.commit('limitedResetGrid');
+      context.dispatch('createGraph', { rows: context.state.rowCount, cols: context.state.columnCount })
+
+
+    },
     createGraph(context, payload) {
       const graph = generateGraph(payload.rows, payload.cols);
       context.commit("setGraph", graph);
@@ -210,16 +234,12 @@ export default new Vuex.Store({
       console.log(`Running algorithm: ${algorithm}`);
       if (algorithm == "search/breadth-first") {
         context.dispatch("bfs")
-        // this.path = await this.bfs(this.graph, startNode, endNode);
       } else if (algorithm == "search/depth-first") {
         const dfsPath = [];
         context.commit("setPath", dfsPath);
-        // this.path = await this.dfs(this.graph, startNode, endNode);
       } else if (algorithm == "search/a-star") {
         context.dispatch("aStar");
-        //const aStarPath = [];
         //context.commit("setPath", aStarPath);
-        // this.path = await this.aStar(this.graph, startNode, endNode);
       } else if (algorithm == "search/best-first") {
         const bestFirstPath = [];
         context.commit("setPath", bestFirstPath);
@@ -232,21 +252,23 @@ export default new Vuex.Store({
       context.commit("setIsAlgorithmRunning", true);
       context.commit("setIsAlgorithmFinished", true);
       // Convert to a mutation
-      context.commit("setSelectionState", "pick-start");
+      //context.commit("setSelectionState", "pick-start");
     },
     async bfs(context) {
       const graph = context.state.graph;
       const startNode =
         graph[`(${context.state.startX},${context.state.startY})`];
       const endNode = graph[`(${context.state.destX},${context.state.destY})`];
-      console.log(startNode, endNode)
       //const visited = [];
       const queue = new Queue();
       startNode.dist = 0;
       queue.enqueue(startNode);
+      console.log(`This is our start Node x value ${startNode.x}`);
+      startNode.queueState = true;
       while (!queue.isEmpty() && context.state.isAlgorithmRunning) {
-        console.log("BFS Iteration");
         const currentNode = queue.dequeue();
+        console.log(`This is our current node x value ${currentNode.x}`);
+        currentNode.queueState = false;
         await sleep(context.state.delayFactor / context.state.vizSpeed);
         if (currentNode.state != WALL) {
           //visited.push(currentNode);
@@ -257,10 +279,8 @@ export default new Vuex.Store({
         var iterNode = currentNode;
         if (iterNode.x == endNode.x && iterNode.y == endNode.y) {
           const path = getPath(iterNode, startNode);
-          console.log(path)
           context.commit("setPath", path);
           for (let i = path.length - 1; i >= 0; i--) {
-            console.log(path[i].x, path[i].y)
             context.commit('setGridNodeState', {
               x: path[i].x, y: path[i].y, nodeState: PATH
             })
@@ -283,6 +303,8 @@ export default new Vuex.Store({
               }
               neighbour.dist = currentNode.dist + 1;
               queue.enqueue(neighbour);
+              neighbour.queueState = true;
+
             }
           }
         }
@@ -329,7 +351,6 @@ export default new Vuex.Store({
         for (let neighbourCoors of currentNode.adj) {
           const neighbour = graph[neighbourCoors];
           if (neighbour.state == WALL) {
-            console.log("wall");
             continue;
           }
           if (neighbour.parent == null) {

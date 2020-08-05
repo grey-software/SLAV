@@ -50,7 +50,7 @@
       <div class="ml-5 mt-5">
         <div v-for="j in 1" :key="j" class="flex">
           <div v-for="i in 37" :key="i">
-            <queue-cell :queueIndex="i" :gridData="gridData" />
+            <queue-cell :queueIndex=i :gridData="gridData" />
           </div>
         </div>
       </div>
@@ -146,14 +146,16 @@ export default {
       selectionStateLabels: {
         "pick-start": "Pick the starting node!",
         "pick-dest": "Pick the destination node!",
-        ready: "You're ready to visualize!"
+        "ready": "You're ready to visualize!",
+        "Finished": "Visualization Completed"
       },
       rowCount: GRID_MAX_Y,
       columnCount: GRID_MAX_X,
       delayFactor: 200,
       wallCoordinates: new Set(),
       wallCreationState: false,
-      queueNodes: {}
+      queueNodes: {},
+      moveDestState: false
     };
   },
   created() {
@@ -198,12 +200,14 @@ export default {
     ...mapMutations([
       "setIsAlgorithmFinished",
       "setIsAlgorithmRunning",
+      "setCurrentAlgorithm",
       "setSelectionState",
       "setGraph",
       "setStartCoors",
       "setDestCoors",
       "setCurrCoors",
-      "resetGrid"
+      "resetGrid",
+      "limitedResetGrid"
     ]),
     ...mapActions([
       "createGraph",
@@ -217,7 +221,8 @@ export default {
       "findMinNodeIndex",
       "best_first",
       "drawPath",
-      "reset"
+      "reset",
+      "limitedReset"
     ]),
     addWall(wallCoordinate) {
       this.graph[wallCoordinate].state = WALL;
@@ -227,7 +232,6 @@ export default {
       switch (this.selectionState) {
         case "pick-start": {
           this.setStartCoors({ x, y });
-          console.log(`${this.startX},${this.startY}`);
           this.setSelectionState("pick-dest");
           break;
         }
@@ -250,8 +254,28 @@ export default {
           }
           break;
         }
+        case "Finished": {
+          if(x == this.destX && y == this.destY){
+            if(!this.moveDestNodeState){
+              this.moveDestNodeState = true;
+            } else{
+              this.moveDestNodeState = false;
+
+            }
+
+
+          }
+          break;
+          
+
+
+        }
+
+
       }
     },
+
+  
 
     onGridCellHover(x, y) {
       if (this.wallCreationState) {
@@ -260,6 +284,16 @@ export default {
             this.addWall(`(${x},${y})`);
           }
         }
+      }
+
+      if(this.moveDestNodeState){
+        this.setDestCoors(x,y);
+        this.limitedResetGrid();
+        this.createGraph({ rows: this.rowCount, cols: this.columnCount });
+        this.runAlgorithm({ algorithm: this.currentAlgorithm });
+
+
+
       }
     },
     async dfs(graph, startNode, endNode) {

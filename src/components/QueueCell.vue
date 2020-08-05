@@ -38,6 +38,7 @@ export default {
     },
     
     isInQueue(){
+      console.log(`Test Node = ${this.gridNode}`);
       if(this.gridNode != null){
         return this.gridNode.queueState === true;
 
@@ -81,10 +82,11 @@ export default {
   width: 30px;
   border: solid 0.2px;  
   border-color: white;
+  background-color: black;
 }
 
 .queue_cell{
-  
+  background-color: brown;
   border-color: greenyellow;
 
 
