@@ -345,8 +345,17 @@ export default new Vuex.Store({
         }
         await sleep(context.state.delayFactor / context.state.vizSpeed);
         //Check if we're done
-        if (currentNode.x == endNode.x && currentNode.y == endNode.y) {
-          return getPath(currentNode, startNode);
+        var iterNode = currentNode;
+        if (iterNode.x == endNode.x && iterNode.y == endNode.y) {
+          const path = getPath(iterNode, startNode);
+          context.commit("setPath", path);
+          for (let i = path.length - 1; i >= 0; i--) {
+            context.commit('setGridNodeState', {
+              x: path[i].x, y: path[i].y, nodeState: PATH
+            })
+            await sleep(50);
+          }
+          return
         }
         for (let neighbourCoors of currentNode.adj) {
           const neighbour = graph[neighbourCoors];
@@ -423,15 +432,6 @@ export default new Vuex.Store({
       return index;
     },
 
-    drawPath(iterNode, startNode) {
-      //Iterate back up the parents until you find the null parent
-      var path = [];
-      while (!(iterNode.x == startNode.x && iterNode.y == startNode.y)) {
-        path.push(iterNode);
-        iterNode = iterNode.parent;
-      }
-      return path;
-    }
 
   },
 
